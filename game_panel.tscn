@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3 uid="uid://cm5ya8tsoxxkl"]
+
+[ext_resource type="Script" uid="uid://cabrkns58ax8y" path="res://game_panel.gd" id="1_d5y5s"]
+[ext_resource type="Texture2D" uid="uid://dig67abooo6n0" path="res://lapangan.jpg" id="2_3m864"]
+
+[node name="GamePanel" type="Node2D"]
+script = ExtResource("1_d5y5s")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(424, 257)
+scale = Vector2(1.3611112, 1.3611112)
+texture = ExtResource("2_3m864")
+
+[node name="Label" type="Label" parent="."]
+offset_left = 190.0
+offset_top = 71.0
+offset_right = 295.0
+offset_bottom = 105.0
+theme_override_font_sizes/font_size = 24
+text = "Giliran: X"
