@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://bmmqxc245f1w3"]
+
+[ext_resource type="Texture2D" uid="uid://di1n6lesqn4uh" path="res://assets/sprite.png" id="1_c58w5"]
+[ext_resource type="Script" uid="uid://bjf8a47l8vmlq" path="res://Unit.gd" id="1_ypl2c"]
+
+[node name="Unit" type="Node2D"]
+script = ExtResource("1_ypl2c")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(3.2, 3.2)
+texture = ExtResource("1_c58w5")
+hframes = 20
+vframes = 2
+frame = 1

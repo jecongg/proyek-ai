@@ -15,10 +15,6 @@ var valid_tiles = {}
 # Reference Unit (Testing)
 @export var test_unit : Sprite2D 
 
-func _ready():
-	setup_board_map()
-	queue_redraw()
-
 # --- FUNGSI 1: MENDAFTARKAN TILE VALID ---
 func setup_board_map():
 	valid_tiles.clear()
@@ -66,23 +62,60 @@ func _draw():
 		# Gambar Koordinat (Opsional, matikan kalau sudah hafal)
 		draw_string(ThemeDB.fallback_font, pixel_pos + Vector2(0, -15), str(hex), HORIZONTAL_ALIGNMENT_CENTER, -1, 20, Color.BLACK)
 
-# --- FUNGSI 3: INTERAKSI ---
+# --- UNIT MANAGEMENT ---
+# Ambil Cetakan Kue (Unit.tscn)
+var unit_scene = preload("res://Unit.tscn")
+
+# Database posisi unit
+# Key: Vector2i(q, r) -> Value: Node Unit
+var units_on_board = {} 
+
+func _ready():
+	setup_board_map() # Fungsi peta valid yang tadi
+	queue_redraw()
+	
+	# CONTOH: Spawn unit awal saat game mulai
+	spawn_unit("ACROBAT", Vector2i(0, 1), 1)
+	spawn_unit("BRUISER", Vector2i(2, -3), 2)
+	spawn_unit("RIDER", Vector2i(-1, 1), 1)
+
+# --- FUNGSI SPAWN DINAMIS ---
+func spawn_unit(type_name: String, coords: Vector2i, owner_id: int):
+	# 1. Cek apakah koordinat valid & kosong?
+	if not valid_tiles.has(coords):
+		print("Error: Tile tidak valid!")
+		return
+	if units_on_board.has(coords):
+		print("Error: Tile sudah ada isinya!")
+		return
+
+	# 2. Ciptakan Instance Baru
+	var new_unit = unit_scene.instantiate()
+	
+	# 3. Masukkan ke dalam Scene Tree (Sebagai anak Board)
+	add_child(new_unit)
+	
+	# 4. Atur Posisi Pixel & Data
+	new_unit.position = hex_to_pixel(coords)
+	new_unit.setup(type_name, coords, owner_id) 
+	
+	# 5. Catat di Buku Data
+	units_on_board[coords] = new_unit
+	print("Unit ", type_name, " lahir di ", coords)
+
 func _unhandled_input(event):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var local_mouse = get_local_mouse_position()
 		var hex_coord = pixel_to_hex(local_mouse)
 		
-		# CEK APAKAH KLIK DI TILE VALID?
 		if valid_tiles.has(hex_coord):
-			print("Gerak ke: ", hex_coord)
-			var center_pos = hex_to_pixel(hex_coord)
-			
-			if test_unit:
-				# Animasi gerak halus (Tween) biar terlihat pro
-				var tween = create_tween()
-				tween.tween_property(test_unit, "position", center_pos, 0.15)
-		else:
-			print("DILARANG! Itu luar area papan.")
+			# Cek apakah kita klik unit?
+			if units_on_board.has(hex_coord):
+				print("Kamu klik unit: ", units_on_board[hex_coord].unit_type)
+				# Nanti di sini logic select unit
+			else:
+				print("Kamu klik tile kosong: ", hex_coord)
+				# Nanti di sini logic pindah (move)
 
 # --- RUMUS MATEMATIKA (JANGAN DIUBAH LAGI) ---
 func hex_to_pixel(hex: Vector2i) -> Vector2:
