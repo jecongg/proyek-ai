@@ -1,11 +1,11 @@
 [gd_scene load_steps=7 format=3 uid="uid://cm5ya8tsoxxkl"]
 
 [ext_resource type="Script" uid="uid://cabrkns58ax8y" path="res://game_panel.gd" id="1_d5y5s"]
-[ext_resource type="Texture2D" uid="uid://b2wdjbv73j8l" path="res://assets/background.png" id="2_d5y5s"]
-[ext_resource type="Texture2D" uid="uid://b6btwswcurfbx" path="res://assets/board.png" id="3_3m864"]
+[ext_resource type="Texture2D" uid="uid://b2wdjbv73j8l" path="res://assets/images/background.png" id="2_d5y5s"]
+[ext_resource type="Texture2D" uid="uid://b6btwswcurfbx" path="res://assets/images/board.png" id="3_3m864"]
 [ext_resource type="Script" uid="uid://yhgnre2adtie" path="res://GridManager.gd" id="4_jhmo0"]
 [ext_resource type="Script" uid="uid://dcn026wjv86gp" path="res://GameManager.gd" id="6_56u4o"]
-[ext_resource type="Texture2D" uid="uid://51slep6a8ejb" path="res://assets/Cards.webp" id="6_jhmo0"]
+[ext_resource type="PackedScene" uid="uid://bmvvsotalgtj7" path="res://RecruitUI.tscn" id="7_56u4o"]
 
 [node name="GamePanel" type="Node2D"]
 script = ExtResource("1_d5y5s")
@@ -27,14 +27,27 @@ position = Vector2(794, 545.8406)
 scale = Vector2(0.50346416, 0.50346416)
 texture = ExtResource("3_3m864")
 script = ExtResource("4_jhmo0")
+hex_size = null
 y_stretch = 0.335
 grid_offset = Vector2(-2, 0)
 
-[node name="Cards2" type="Sprite2D" parent="."]
-position = Vector2(1623, 497)
-texture = ExtResource("6_jhmo0")
-hframes = 9
-vframes = 3
-
-[node name="GameManager" type="Node" parent="."]
+[node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("recruit_ui")]
 script = ExtResource("6_56u4o")
+recruit_ui = NodePath("../UILayer/RecruitUI")
+
+[node name="UILayer" type="CanvasLayer" parent="."]
+
+[node name="RecruitUI" parent="UILayer" instance=ExtResource("7_56u4o")]
+anchors_preset = 4
+anchor_top = 0.5
+anchor_right = 0.0
+anchor_bottom = 0.5
+grow_horizontal = 1
+
+[node name="BtnSkip" type="Button" parent="UILayer"]
+offset_left = 1545.0
+offset_top = 952.0
+offset_right = 1853.0
+offset_bottom = 1040.0
+text = "SKIP ACTION / END MOVE
+"

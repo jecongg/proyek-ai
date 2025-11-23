@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3 uid="uid://nc73dnxaypc0"]
 
 [ext_resource type="Script" uid="uid://d2wfkfxtymria" path="res://MainMenu.gd" id="1_73j7d"]
-[ext_resource type="Texture2D" uid="uid://b2wdjbv73j8l" path="res://assets/background.png" id="2_eiy7p"]
+[ext_resource type="Texture2D" uid="uid://b2wdjbv73j8l" path="res://assets/images/background.png" id="2_eiy7p"]
 [ext_resource type="FontFile" uid="uid://jcjyvvgee2n2" path="res://assets/fonts/ElmsSans-Bold.ttf" id="3_h7a2f"]
 [ext_resource type="Theme" uid="uid://y8d41l4pdu8w" path="res://assets/styles/button_style.tres" id="3_qoqlk"]
 

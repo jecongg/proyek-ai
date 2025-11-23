@@ -1,27 +1,72 @@
 extends Node
-class_name CardDB
+class_name CardDB # <--- PENTING: Agar bisa dipanggil dari mana saja
 
+# --- DATA LIBRARY ---
+# Daftar semua script karakter yang ada
+# Pastikan script AcrobatData, LeaderData, dll sudah ada class_name-nya
 static var library = {
-	"LEADER": LeaderData, # Pastikan LeaderData sudah ada
-	"ACROBAT": AcrobatData
+	"LEADER": LeaderData,
+	"ACROBAT": AcrobatData,
+	# "BRUISER": BruiserData, # Uncomment jika sudah buat scriptnya
+	# "RIDER": RiderData      # Uncomment jika sudah buat scriptnya
 }
 
-static var taken_units : Array = []
+# --- DECK MANAGEMENT ---
+static var available_deck : Array = [] # Tumpukan kartu tertutup
+static var market_cards : Array = []   # 3 Kartu terbuka
+static var taken_units : Array = []    # Kartu yang sudah diambil player
 
+# --- FUNGSI 1: SETUP AWAL ---
+static func initialize_deck():
+	available_deck.clear()
+	market_cards.clear()
+	taken_units.clear()
+	
+	# Masukkan semua unit KECUALI Leader ke dalam deck
+	for key in library.keys():
+		if key != "LEADER":
+			# Masukkan beberapa kopi jika perlu (misal ada 2 Acrobat di deck)
+			available_deck.append(key)
+			available_deck.append(key) # Contoh: Masukkan 2 biji biar deck gak kosong
+	
+	available_deck.shuffle() # Kocok kartu
+	refill_market()
+
+# --- FUNGSI 2: URUS PASAR (MARKET) ---
+static func refill_market():
+	# Isi pasar sampai ada 3 kartu (selama deck masih ada sisa)
+	while market_cards.size() < 3 and available_deck.size() > 0:
+		var new_card = available_deck.pop_front()
+		market_cards.append(new_card)
+		print("Market Refilled: ", new_card)
+
+static func get_market_card_id(index: int) -> String:
+	if index >= 0 and index < market_cards.size():
+		return market_cards[index]
+	return "" # Kosong/Habis
+
+static func pick_card_from_market(index: int) -> String:
+	if index < 0 or index >= market_cards.size(): return ""
+	
+	var picked_id = market_cards.pop_at(index) # Ambil kartu
+	refill_market() # Langsung isi penggantinya
+	return picked_id
+
+# --- FUNGSI 3: SPAWN DATA (Yang tadi Error) ---
 static func get_unit_data(unit_id: String) -> CharacterData:
-	# REVISI: Pengecualian untuk LEADER
-	# Leader tidak boleh dicek apakah "sudah diambil", karena P1 dan P2 butuh Leader.
+	# Pengecualian: Leader tidak dicek "Taken" (karena ada 2)
 	if unit_id != "LEADER" and unit_id in taken_units:
 		print("Unit ini sudah diambil orang lain!")
 		return null
-		
+	
 	if library.has(unit_id):
 		var new_data = library[unit_id].new()
 		
-		# REVISI: Jangan tandai LEADER sebagai "taken"
+		# Tandai unit sebagai "Taken" (Kecuali Leader)
 		if unit_id != "LEADER":
 			taken_units.append(unit_id)
 			
 		return new_data
 	
+	print("Error: Unit ID '", unit_id, "' tidak ditemukan di Library.")
 	return null

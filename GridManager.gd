@@ -143,19 +143,37 @@ func spawn_unit(type_name: String, coords: Vector2i, owner_id: int):
 	units_on_board[coords] = new_unit
 	print("Unit ", type_name, " lahir di ", coords)
 
+# Di GridManager.gd
+
+# Update _unhandled_input
 func _unhandled_input(event):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var local_mouse = get_local_mouse_position()
 		var hex_coord = pixel_to_hex(local_mouse)
 		
-		if valid_tiles.has(hex_coord):
-			# Cek apakah kita klik unit?
-			if units_on_board.has(hex_coord):
-				print("Kamu klik unit: ", units_on_board[hex_coord].unit_type)
-				# Nanti di sini logic select unit
-			else:
-				print("Kamu klik tile kosong: ", hex_coord)
-				# Nanti di sini logic pindah (move)
+		# Ambil ref ke GameManager
+		var game_manager = $"../GameManager" 
+		
+		# LOGIC 1: SEDANG FASE TARUH UNIT (RECRUIT)
+		if game_manager.current_state == game_manager.State.RECRUIT_PLACE:
+			game_manager.try_place_recruit(hex_coord)
+			return # Stop, jangan jalankan logic lain
+			
+		# LOGIC 2: FASE ACTION (Pilih unit / Gerak)
+		if game_manager.current_state == game_manager.State.ACTION_PHASE:
+			# ... (Kode lama kamu untuk select/move unit) ...
+			pass
+
+# Fungsi Visual: Tampilkan Zona Spawn
+func highlight_spawn_zones(player_id: int, active: bool):
+	# Kamu bisa pakai variable boolean untuk toggle _draw()
+	# atau spawn Sprite 'Highlighter' sederhana di tile spawn
+	
+	# Contoh simple debug print:
+	if active:
+		print("--- ZONA SPAWN AKTIF ---")
+		if player_id == 1: print(p1_spawn_zones)
+		else: print(p2_spawn_zones)
 
 # --- RUMUS MATEMATIKA (JANGAN DIUBAH LAGI) ---
 func hex_to_pixel(hex: Vector2i) -> Vector2:
