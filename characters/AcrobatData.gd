@@ -5,7 +5,9 @@ func _init():
 	id = "ACROBAT"
 	display_name = "The Acrobat"
 	description = "Melompati unit lain sejauh 2 langkah."
-	sprite_column = 5
+	sprite_column = 8
+	card_x = 0
+	card_y = 0
 	cost = 2
 
 func get_valid_moves(board_state: Dictionary, current_pos: Vector2i) -> Array:

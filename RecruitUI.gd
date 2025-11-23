@@ -54,14 +54,17 @@ func update_visuals():
 			
 			if CardDB.library.has(unit_id):
 				var dummy_data = CardDB.library[unit_id].new()
-				var col = dummy_data.sprite_column
 				
-				# Potong Atlas Texture
+				# --- LANGSUNG PAKAI X DAN Y ---
+				var col = dummy_data.card_x
+				var row = dummy_data.card_y
+				
 				var atlas = AtlasTexture.new()
 				atlas.atlas = card_texture
 				
-				# Baris 0 (Muka Kartu)
-				atlas.region = Rect2(col * frame_w, 0, frame_w, frame_h)
+				# RUMUSNYA JADI SEDERHANA:
+				# (Kolom * Lebar, Baris * Tinggi, Lebar, Tinggi)
+				atlas.region = Rect2(col * frame_w, row * frame_h, frame_w, frame_h)
 				
 				buttons[i].icon = atlas
 				dummy_data = null

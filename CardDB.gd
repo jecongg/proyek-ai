@@ -1,5 +1,5 @@
 extends Node
-class_name CardDB # <--- PENTING: Agar bisa dipanggil dari mana saja
+class_name CardDB
 
 # --- DATA LIBRARY ---
 # Daftar semua script karakter yang ada
@@ -7,8 +7,11 @@ class_name CardDB # <--- PENTING: Agar bisa dipanggil dari mana saja
 static var library = {
 	"LEADER": LeaderData,
 	"ACROBAT": AcrobatData,
-	# "BRUISER": BruiserData, # Uncomment jika sudah buat scriptnya
-	# "RIDER": RiderData      # Uncomment jika sudah buat scriptnya
+	"RIDER": RiderData,
+	"ASSASSIN": AssassinData,
+	"ARCHER": ArcherData,
+	"ROYAL_GUARD": RoyalGuardData,
+	"VIZIER": VizierData
 }
 
 # --- DECK MANAGEMENT ---
