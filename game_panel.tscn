@@ -1,9 +1,10 @@
-[gd_scene load_steps=6 format=3 uid="uid://cm5ya8tsoxxkl"]
+[gd_scene load_steps=7 format=3 uid="uid://cm5ya8tsoxxkl"]
 
 [ext_resource type="Script" uid="uid://cabrkns58ax8y" path="res://game_panel.gd" id="1_d5y5s"]
 [ext_resource type="Texture2D" uid="uid://b2wdjbv73j8l" path="res://assets/background.png" id="2_d5y5s"]
 [ext_resource type="Texture2D" uid="uid://b6btwswcurfbx" path="res://assets/board.png" id="3_3m864"]
 [ext_resource type="Script" uid="uid://yhgnre2adtie" path="res://GridManager.gd" id="4_jhmo0"]
+[ext_resource type="Script" uid="uid://dcn026wjv86gp" path="res://GameManager.gd" id="6_56u4o"]
 [ext_resource type="Texture2D" uid="uid://51slep6a8ejb" path="res://assets/Cards.webp" id="6_jhmo0"]
 
 [node name="GamePanel" type="Node2D"]
@@ -21,17 +22,19 @@ grow_vertical = 2
 texture = ExtResource("2_d5y5s")
 expand_mode = 1
 
-[node name="Board" type="Sprite2D" parent="." node_paths=PackedStringArray("test_unit")]
+[node name="Board" type="Sprite2D" parent="."]
 position = Vector2(794, 545.8406)
 scale = Vector2(0.50346416, 0.50346416)
 texture = ExtResource("3_3m864")
 script = ExtResource("4_jhmo0")
 y_stretch = 0.335
 grid_offset = Vector2(-2, 0)
-test_unit = NodePath("")
 
 [node name="Cards2" type="Sprite2D" parent="."]
 position = Vector2(1623, 497)
 texture = ExtResource("6_jhmo0")
 hframes = 9
 vframes = 3
+
+[node name="GameManager" type="Node" parent="."]
+script = ExtResource("6_56u4o")

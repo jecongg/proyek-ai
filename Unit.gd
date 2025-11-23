@@ -8,16 +8,24 @@ var grid_pos : Vector2i
 var owner_id : int
 
 func setup(new_data: CharacterData, start_pos: Vector2i, new_owner: int):
-	data = new_data # Simpan resource-nya
+	data = new_data
 	grid_pos = start_pos
 	owner_id = new_owner
 	
-	# Update Visual otomatis dari Data
-	sprite.frame = data.sprite_frame
+	# --- LOGIKA VISUAL BARU (FRAME COORDS) ---
+	# Asumsi: 
+	# Row 0 (Atas) = Player 1
+	# Row 1 (Bawah) = Player 2
 	
-	# Kalau musuh, ubah warna dikit
+	var row_index = 0
 	if owner_id == 2:
-		modulate = Color(1, 0.5, 0.5)
+		row_index = 1 # Gunakan baris kedua spritesheet
+	
+	# Set koordinat frame: (Kolom X, Baris Y)
+	sprite.frame_coords = Vector2i(data.sprite_column, row_index)
+	
+	# (Opsional) Matikan modulate warna jika spritesheet-nya sudah beda warna
+	# modulate = Color.WHITE
 
 # Saat mau gerak, Unit tanya ke "Jiwa"-nya
 func get_moves(board_state):

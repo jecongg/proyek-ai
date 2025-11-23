@@ -15,7 +15,11 @@ var valid_tiles = {}
 # Reference Unit (Testing)
 @export var test_unit : Sprite2D 
 
-# --- FUNGSI 1: MENDAFTARKAN TILE VALID ---
+var p1_spawn_zones = [] # Area rekrut Player 1 (Bawah)
+var p2_spawn_zones = [] # Area rekrut Player 2 (Atas)
+var p1_leader_start : Vector2i
+var p2_leader_start : Vector2i
+
 func setup_board_map():
 	valid_tiles.clear()
 	
@@ -41,6 +45,23 @@ func setup_board_map():
 	add_column(-3, 3, 6)
 	
 	print("Total Tile Valid: ", valid_tiles.size())
+	
+	# Set Leader Start (Biasanya paling tengah di baris belakang)
+	p1_leader_start = Vector2i(-3, 6)  # Contoh: Tengah Bawah
+	p2_leader_start = Vector2i(3, -6) # Contoh: Tengah Atas
+	
+	# Set Zona Rekrut (Area di sekitar Leader atau baris belakang)
+	# Masukkan koordinat manual yang dianggap "Sisi Papan Anda"
+	p1_spawn_zones = [Vector2i(-3, 3), Vector2i(-3, 4),Vector2i(-3, 5), Vector2i(-3, 6), Vector2i(-2, 5), Vector2i(-1, 4), Vector2i(0, 3)] # Isi koordinat baris bawah
+	p2_spawn_zones = [Vector2i(3, -3), Vector2i(3, -4),Vector2i(3, -5), Vector2i(3, -6), Vector2i(2, -5), Vector2i(1, -4), Vector2i(0, -3)] # Isi koordinat baris bawah
+
+
+# Fungsi Helper untuk mengecek apakah tile ini adalah zona spawn player tertentu
+func is_spawn_zone(coord: Vector2i, player_id: int) -> bool:
+	if player_id == 1:
+		return coord in p1_spawn_zones
+	else:
+		return coord in p2_spawn_zones
 
 # Helper function biar nulisnya pendek
 func add_column(q, r_start, r_end):
@@ -71,13 +92,32 @@ var unit_scene = preload("res://Unit.tscn")
 var units_on_board = {} 
 
 func _ready():
-	setup_board_map() # Fungsi peta valid yang tadi
-	queue_redraw()
+	setup_board_map()
 	
-	# CONTOH: Spawn unit awal saat game mulai
-	spawn_unit("ACROBAT", Vector2i(0, 1), 1)
-	spawn_unit("BRUISER", Vector2i(2, -3), 2)
-	spawn_unit("RIDER", Vector2i(-1, 1), 1)
+	# COBA SPAWN ACROBAT BUAT PLAYER 1
+	spawn_unit_by_id("ACROBAT", Vector2i(0, 0), 1)
+	
+	# COBA SPAWN ACROBAT BUAT PLAYER 2 (Harusnya GAGAL karena unik)
+	spawn_unit_by_id("ACROBAT", Vector2i(0, -1), 2) 
+
+func spawn_unit_by_id(id_string: String, coords: Vector2i, owner_id: int):
+	# 1. Minta Data ke Database
+	var data = CardDB.get_unit_data(id_string)
+	
+	# 2. Cek apakah boleh diambil?
+	if data == null:
+		print("Gagal Spawn: Unit ", id_string, " tidak tersedia atau sudah diambil.")
+		return
+		
+	# 3. Tandai sudah diambil (Mark as Taken)
+	CardDB.taken_units.append(id_string)
+	
+	# 4. Proses Spawn Visual (Sama seperti sebelumnya)
+	var new_unit = unit_scene.instantiate()
+	add_child(new_unit)
+	new_unit.position = hex_to_pixel(coords)
+	new_unit.setup(data, coords, owner_id)
+	units_on_board[coords] = new_unit
 
 # --- FUNGSI SPAWN DINAMIS ---
 func spawn_unit(type_name: String, coords: Vector2i, owner_id: int):
@@ -143,3 +183,68 @@ func hex_round(hex: Vector2) -> Vector2i:
 	elif r_diff > s_diff:
 		r = -q - s_round
 	return Vector2i(q, r)
+	
+	# Cek apakah Player ID ini MENANG?
+func check_win_condition(attacker_id: int):
+	var enemy_id = 1
+	if attacker_id == 1: enemy_id = 2
+	
+	# 1. Cari Posisi Leader Musuh
+	var enemy_leader_pos = Vector2i.ZERO
+	var leader_found = false
+	
+	for coord in units_on_board:
+		var unit = units_on_board[coord]
+		if unit.data.id == "LEADER" and unit.owner_id == enemy_id:
+			enemy_leader_pos = coord
+			leader_found = true
+			break
+	
+	if not leader_found:
+		return # Belum ada leader (awal game)
+		
+	# 2. Cek Kondisi CAPTURE (2 Musuh di sebelah Leader)
+	var neighbors = get_neighbors(enemy_leader_pos)
+	var enemy_count_around = 0
+	
+	for n in neighbors:
+		if units_on_board.has(n):
+			var unit = units_on_board[n]
+			if unit.owner_id == attacker_id:
+				enemy_count_around += 1
+				# Logic Assassin: Kalau yang sebelah adalah Assassin, langsung menang?
+				if unit.data.id == "ASSASSIN":
+					print("MENANG! Assassin membunuh Leader!")
+					return
+	
+	if enemy_count_around >= 2:
+		print("MENANG! Kondisi CAPTURE terpenuhi!")
+		return
+
+	# 3. Cek Kondisi SURROUND (Leader Terkepung, tidak bisa gerak)
+	var free_space = 0
+	for n in neighbors:
+		# Petak disebut 'Bebas' jika:
+		# a. Ada di dalam papan (Valid Tile)
+		# b. DAN Tidak ada unit di sana
+		if valid_tiles.has(n) and not units_on_board.has(n):
+			free_space += 1
+	
+	if free_space == 0:
+		print("MENANG! Kondisi SURROUND terpenuhi!")
+		return
+
+const DIRECTIONS = [
+	Vector2i(0, -1),  # Atas Kiri
+	Vector2i(1, -2),  # Atas Kanan
+	Vector2i(1, -1),  # Kanan
+	Vector2i(0, 1),   # Bawah Kanan
+	Vector2i(-1, 2),  # Bawah Kiri
+	Vector2i(-1, 1)   # Kiri
+]
+
+func get_neighbors(coords: Vector2i) -> Array:
+	var result = []
+	for d in DIRECTIONS:
+		result.append(coords + d)
+	return result
