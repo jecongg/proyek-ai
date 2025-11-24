@@ -1,26 +1,20 @@
 extends Node
 
-enum State { 
-	ACTION_PHASE, 	# Pemain gerak unit / Skip
-	RECRUIT_SELECT, # Pemain pilih kartu di UI
-	RECRUIT_PLACE 	# Pemain taruh unit di papan
-}
+enum State { ACTION_PHASE, RECRUIT_SELECT, RECRUIT_PLACE }
 
 var current_state = State.ACTION_PHASE
 var current_turn = 1
-var p2_first_turn_bonus = true # Penanda bonus P2
-var recruits_remaining = 0 # Berapa kartu lagi yang harus ditaruh?
-var selected_card_id = ""  # Kartu apa yang sedang dipegang mouse?
+var p2_first_turn_bonus = true 
+var recruits_remaining = 0 
+var selected_card_id = ""  
 
 @onready var grid = $"../Board"
 @export var recruit_ui : Control 
+@onready var info_label = $"../UILayer/InfoLabel" # Referensi ke Label Baru
 
 func _ready():
 	CardDB.initialize_deck()
-	
-	# Connect sinyal dari UI
 	recruit_ui.card_selected.connect(_on_card_picked_from_ui)
-	
 	await get_tree().process_frame
 	start_game()
 
@@ -31,16 +25,22 @@ func start_game():
 
 func start_turn(player_id):
 	current_turn = player_id
+	current_state = State.ACTION_PHASE
 	
-	# --- DEBUG MODE: LANGSUNG LONCAT KE RECRUIT ---
-	# Hapus baris ini nanti kalau sudah fix
-	print("DEBUG: Memaksa masuk fase Recruit untuk tes UI")
-	#skip_action_phase() 
-	return 
-	# ----------------------------------------------
-
-	# (Kode asli di bawah ini tidak akan jalan karena return di atas)
-	#current_state = State.ACTION_PHASE
+	# --- UPDATE UI TEKS ---
+	info_label.text = "GILIRAN PLAYER " + str(current_turn) + "\n(Pilih Unit untuk Gerak atau SKIP)"
+	if current_turn == 1:
+		info_label.modulate = Color.WHITE
+	else:
+		info_label.modulate = Color(1, 0.5, 0.5) # Merah muda buat P2
+	
+	# --- RESET SEMUA UNIT DI PAPAN ---
+	# Supaya unit player ini bisa gerak lagi
+	for unit in grid.units_on_board.values():
+		if unit.owner_id == current_turn:
+			unit.reset_turn_state() # Balikin warna jadi cerah
+	
+	print("Giliran Player ", current_turn, " Dimulai.")
 
 # Dipanggil oleh tombol SKIP atau setelah Unit bergerak
 func skip_action_phase():

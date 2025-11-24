@@ -2,31 +2,34 @@ extends Node2D
 
 @onready var sprite = $Sprite2D
 
-# PENTING: Ini adalah "Jiwa" unit ini
 var data : CharacterData 
 var grid_pos : Vector2i
 var owner_id : int
+
+# VARIABLE BARU
+var has_moved : bool = false 
 
 func setup(new_data: CharacterData, start_pos: Vector2i, new_owner: int):
 	data = new_data
 	grid_pos = start_pos
 	owner_id = new_owner
 	
-	# --- LOGIKA VISUAL BARU (FRAME COORDS) ---
-	# Asumsi: 
-	# Row 0 (Atas) = Player 1
-	# Row 1 (Bawah) = Player 2
+	# Reset status
+	has_moved = false
+	modulate = Color.WHITE
 	
+	# Logika Visual Frame (Tetap sama)
 	var row_index = 0
 	if owner_id == 2:
-		row_index = 1 # Gunakan baris kedua spritesheet
-	
-	# Set koordinat frame: (Kolom X, Baris Y)
+		row_index = 1 
 	sprite.frame_coords = Vector2i(data.sprite_column, row_index)
-	
-	# (Opsional) Matikan modulate warna jika spritesheet-nya sudah beda warna
-	# modulate = Color.WHITE
 
-# Saat mau gerak, Unit tanya ke "Jiwa"-nya
-func get_moves(board_state):
-	return data.get_valid_moves(board_state, grid_pos)
+# Fungsi Baru: Reset saat ganti giliran
+func reset_turn_state():
+	has_moved = false
+	modulate = Color.WHITE # Kembali cerah
+
+# Fungsi Baru: Tandai sudah gerak
+func mark_as_moved():
+	has_moved = true
+	modulate = Color(0.6, 0.6, 0.6) # Jadi agak gelap (Exhausted)

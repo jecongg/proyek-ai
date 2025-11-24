@@ -51,3 +51,13 @@ offset_right = 1853.0
 offset_bottom = 1040.0
 text = "SKIP ACTION / END MOVE
 "
+
+[node name="InfoLabel" type="Label" parent="UILayer"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_right = 20.0
+offset_bottom = 23.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 32

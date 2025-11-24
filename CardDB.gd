@@ -25,14 +25,13 @@ static func initialize_deck():
 	market_cards.clear()
 	taken_units.clear()
 	
-	# Masukkan semua unit KECUALI Leader ke dalam deck
+	# Masukkan unit ke deck
 	for key in library.keys():
 		if key != "LEADER":
-			# Masukkan beberapa kopi jika perlu (misal ada 2 Acrobat di deck)
+			# CUKUP SEKALI SAJA biar unik
 			available_deck.append(key)
-			available_deck.append(key) # Contoh: Masukkan 2 biji biar deck gak kosong
-	
-	available_deck.shuffle() # Kocok kartu
+			
+	available_deck.shuffle()
 	refill_market()
 
 # --- FUNGSI 2: URUS PASAR (MARKET) ---
