@@ -141,26 +141,27 @@ func deselect_unit():
 	queue_redraw()
 
 func move_selected_unit_to(target_coord: Vector2i):
-	var unit = units_on_board[selected_unit_coord]
-	
-	# 1. Update Data Dictionary
-	units_on_board.erase(selected_unit_coord)
-	units_on_board[target_coord] = unit
-	
-	# 2. Update Visual (Animasi)
-	var pixel_target = hex_to_pixel(target_coord)
-	var tween = create_tween()
-	tween.tween_property(unit, "position", pixel_target, 0.2)
-	
-	# 3. Update Data Unit
-	unit.grid_pos = target_coord
-	unit.mark_as_moved() # Tandai sudah gerak
-	
-	# 4. Cek Win Condition
-	check_win_condition(unit.owner_id)
-	
-	# 5. Reset Seleksi
-	deselect_unit()
+	execute_move(selected_unit_coord, target_coord)
+	#var unit = units_on_board[selected_unit_coord]
+	#
+	## 1. Update Data Dictionary
+	#units_on_board.erase(selected_unit_coord)
+	#units_on_board[target_coord] = unit
+	#
+	## 2. Update Visual (Animasi)
+	#var pixel_target = hex_to_pixel(target_coord)
+	#var tween = create_tween()
+	#tween.tween_property(unit, "position", pixel_target, 0.2)
+	#
+	## 3. Update Data Unit
+	#unit.grid_pos = target_coord
+	#unit.mark_as_moved() # Tandai sudah gerak
+	#
+	## 4. Cek Win Condition
+	#check_win_condition(unit.owner_id)
+	#
+	## 5. Reset Seleksi
+	#deselect_unit()
 
 # --- WIN CONDITION ---
 func check_win_condition(attacker_id: int):
@@ -254,3 +255,30 @@ func _draw():
 	if valid_tiles.has(selected_unit_coord):
 		var px = hex_to_pixel(selected_unit_coord)
 		draw_circle(px, 20, Color(1, 1, 0, 0.3))
+		
+func execute_move(from_coord: Vector2i, to_coord: Vector2i):
+	if not units_on_board.has(from_coord): return
+	
+	var unit = units_on_board[from_coord]
+	
+	# 1. Update Data Dictionary
+	units_on_board.erase(from_coord)
+	units_on_board[to_coord] = unit
+	
+	# 2. Update Visual (Animasi)
+	var pixel_target = hex_to_pixel(to_coord)
+	var tween = create_tween()
+	tween.tween_property(unit, "position", pixel_target, 0.5) # Agak lambat biar kelihatan
+	
+	# 3. Update Data Unit
+	unit.grid_pos = to_coord
+	unit.mark_as_moved() 
+	
+	# 4. Cek Win Condition
+	check_win_condition(unit.owner_id)
+	
+	# 5. Seleksi ulang (hanya visual)
+	deselect_unit()
+	
+	# 6. Lapor ke GameManager bahwa aksi selesai (untuk trigger fase recruit atau next move)
+	$"../GameManager".on_action_performed()
