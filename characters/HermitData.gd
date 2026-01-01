@@ -8,4 +8,4 @@ func _init():
 	sprite_column = 11
 	card_x = 6
 	card_y = 1
-	cost = 3 # Mahal karena dapat 2 unit
+	ai_value = 5

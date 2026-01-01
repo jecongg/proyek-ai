@@ -8,6 +8,6 @@ func _init():
 	sprite_column = 6 
 	card_x = 2
 	card_y = 1
-	cost = 2
+	ai_value = 5
 	
 	is_jailer = true # Flag Pasif

@@ -8,6 +8,6 @@ func _init():
 	sprite_column = 14 
 	card_x = 3
 	card_y = 1
-	cost = 2
+	ai_value = 3
 	
 	is_protector = true # Flag Pasif

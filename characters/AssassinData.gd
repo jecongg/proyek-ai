@@ -9,7 +9,7 @@ func _init():
 	sprite_column = 9
 	card_x = 1
 	card_y = 1
-	cost = 2
+	ai_value = 10
 	
 	# Aktifkan Flag Passive
 	is_assassin = true 

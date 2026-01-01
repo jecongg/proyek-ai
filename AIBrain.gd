@@ -106,11 +106,16 @@ func _evaluate_board(board: Dictionary, ai_id: int) -> float:
 		if unit.owner_id == ai_id:
 			my_units.append(coord)
 			if unit.id == "LEADER": my_leader_pos = coord
-			score += unit.data.cost * 10 # Material value
+			
+			# GANTI cost JADI ai_value
+			score += unit.data.ai_value * 10 
+			
 		else:
 			enemy_units.append(coord)
 			if unit.id == "LEADER": enemy_leader_pos = coord
-			score -= unit.data.cost * 10
+			
+			# GANTI cost JADI ai_value
+			score -= unit.data.ai_value * 10
 			
 	# 2. Cek Kematian (Prioritas Tertinggi)
 	if my_leader_pos == Vector2i.ZERO: return -INF # Kita Kalah

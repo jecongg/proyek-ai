@@ -9,6 +9,6 @@ func _init():
 	sprite_column = 16
 	card_x = 4
 	card_y = 1
-	cost = 2
+	ai_value = 5
 	
 	grants_extra_move_to_leader = true

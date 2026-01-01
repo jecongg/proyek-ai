@@ -8,4 +8,4 @@ func _init():
 	sprite_column = 17 
 	card_x = 6
 	card_y = 0
-	cost = 1
+	ai_value = 9

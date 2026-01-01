@@ -9,7 +9,7 @@ func _init():
 	sprite_column = 4
 	card_x = 0
 	card_y = 1
-	cost = 2
+	ai_value = 8
 	
 	# Aktifkan Flag Passive
 	is_archer = true

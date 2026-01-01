@@ -8,6 +8,6 @@ func _init():
 	sprite_column = 12
 	card_x = 0
 	card_y = 0
-	cost = 0
+	ai_value = 1
 	
 	can_capture_leader = false # Flag Khusus

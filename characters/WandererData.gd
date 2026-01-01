@@ -9,7 +9,7 @@ func _init():
 	sprite_column = 7
 	card_x = 8
 	card_y = 0
-	cost = 1
+	ai_value = 6
 
 func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
 	var moves = []

@@ -140,25 +140,32 @@ func do_ai_recruit():
 	
 	while recruits_remaining > 0:
 		var best_idx = -1
-		var best_cost = -1
+		var best_value = -1 # Ganti best_cost jadi best_value
 		
-		# AI Pilih Kartu Termahal
-		for i in range(3): # Hardcode 3 slot
-			var card_id = CardDB.get_market_card_id(i) # Pake get, jangan market_cards langsung
+		# AI MEMILIH KARTU BERDASARKAN TIER LIST (ai_value)
+		for i in range(3): 
+			var card_id = CardDB.get_market_card_id(i)
 			if card_id == "": continue
 			
 			if CardDB.library.has(card_id):
 				var d = CardDB.library[card_id].new()
-				if d.cost > best_cost:
-					best_cost = d.cost
+				
+				# Cek apakah nilainya lebih tinggi dari pilihan sebelumnya?
+				if d.ai_value > best_value:
+					best_value = d.ai_value
 					best_idx = i
+				
+				# OPSIONAL: Jika nilai sama, pilih random biar AI tidak monoton
+				elif d.ai_value == best_value:
+					if randf() > 0.5: # 50% chance ganti pilihan
+						best_idx = i
 		
 		if best_idx != -1:
 			recruit_ui.highlight_selected_card(best_idx) 
 			await get_tree().create_timer(1.0).timeout
 			
 			var card_id = CardDB.pick_card_from_market(best_idx)
-			print("AI Membeli Unit: ", card_id)
+			print("AI Membeli Unit: ", card_id, " (Value: ", best_value, ")")
 			
 			var spawn_pos = Vector2i(999, 999)
 			for zone in grid.p2_spawn_zones:

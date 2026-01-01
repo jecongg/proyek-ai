@@ -8,7 +8,7 @@ var description : String
 var sprite_column : int   # Untuk Unit di Papan
 var card_x : int = 0  # Posisi Kolom (Kiri-Kanan)
 var card_y : int = 0  # Posisi Baris (Atas-Bawah)
-var cost : int = 0
+var ai_value : int = 5
 
 # --- PASSIVE FLAGS (Sesuai Rulebook Hal 7) ---
 var is_assassin : bool = false # Bisa capture sendirian

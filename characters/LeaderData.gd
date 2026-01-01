@@ -10,7 +10,7 @@ func _init():
 	# Misal Leader ada di urutan kedua (setelah Acrobat), isi 1.
 	sprite_column = 1 # Cek gambar spritesheetmu, kolom ke berapa?
 	
-	cost = 0 # Leader biasanya gratis/awal
+	ai_value = 50
 
 func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
 	var moves = []
