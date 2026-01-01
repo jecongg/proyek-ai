@@ -17,6 +17,7 @@ var is_jailer : bool = false   # Memblokir skill musuh sebelah
 var is_protector : bool = false # Tidak bisa didorong/ditarik
 var grants_extra_move_to_leader : bool = false # Efek Vizier
 var can_capture_leader : bool = true # Default TRUE, nanti CUB kita set FALSE
+var has_active_skill : bool = false
 
 # --- FUNGSI VIRTUAL ---
 func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
@@ -34,6 +35,8 @@ func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id
 			
 	return moves
 
-# Fungsi untuk Active Ability (Skill Tombol Petir Merah)
-func get_skill_targets(board_state: Dictionary, current_pos: Vector2i) -> Array:
-	return [] # Default unit biasa tidak punya skill aktif
+func get_skill_targets(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
+	return []
+	
+func resolve_skill(board_state: Dictionary, current_pos: Vector2i, target_pos: Vector2i, grid_manager_ref) -> bool:
+	return false

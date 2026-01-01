@@ -16,6 +16,10 @@ var p2_spawn_zones = []
 var p1_leader_start : Vector2i
 var p2_leader_start : Vector2i
 
+var is_skill_mode : bool = false
+var valid_skill_targets : Array = []
+@onready var skill_btn = $"../UILayer/BtnSkill"
+
 # --- LOGIC SELEKSI & GERAK ---
 var selected_unit_coord : Vector2i = Vector2i(999, 999) # Koordinat unit yg dipilih
 var valid_moves_current : Array = [] # Daftar kotak tujuan yg boleh diinjak
@@ -96,50 +100,120 @@ func _unhandled_input(event):
 
 # --- LOGIKA GERAKAN ---
 func handle_action_input(clicked_coord: Vector2i, current_player: int):
-	# A. KLIK UNIT SENDIRI -> PILIH UNIT
+	# A. KLIK UNIT SENDIRI (Select)
 	if units_on_board.has(clicked_coord):
 		var unit = units_on_board[clicked_coord]
-		
-		# Cek: Punya kita? Dan Belum gerak?
 		if unit.owner_id == current_player:
 			if not unit.has_moved:
 				select_unit(clicked_coord, unit)
 			else:
-				print("Unit ini sudah lelah (sudah gerak).")
-				deselect_unit()
+				print("Unit exhausted.")
 		else:
-			print("Itu unit musuh!")
-			# Nanti di sini logic attack kalau unit kita tipe melee
-			deselect_unit()
+			# KLIK MUSUH?
+			# Claw Launcher sekarang targetnya TILE KOSONG, bukan Unit Musuh langsung.
+			# Tapi karakter lain (seperti Bruiser) mungkin targetnya Musuh.
+			# Jadi kita cek dua-duanya.
+			if is_skill_mode and clicked_coord in valid_skill_targets:
+				execute_skill_on(clicked_coord)
+			else:
+				deselect_unit()
 	
-	# B. KLIK TILE KOSONG -> COBA GERAK KE SANA
-	elif clicked_coord in valid_moves_current:
-		move_selected_unit_to(clicked_coord)
-	
-	# C. KLIK SEMBARANG -> BATAL PILIH
+	# B. KLIK TILE KOSONG
 	else:
-		deselect_unit()
-
+		# --- UPDATE DI SINI ---
+		# Jika Skill Mode aktif DAN tile kosong ini adalah target valid (Indikator Merah)
+		if is_skill_mode and clicked_coord in valid_skill_targets:
+			execute_skill_on(clicked_coord)
+		
+		# Jika Move Mode (Hijau)
+		elif clicked_coord in valid_moves_current and not is_skill_mode:
+			move_selected_unit_to(clicked_coord)
+			
+		else:
+			deselect_unit()
+			
 func select_unit(coord: Vector2i, unit):
-	print("Unit terpilih: ", unit.data.display_name)
 	selected_unit_coord = coord
+	is_skill_mode = false # Reset mode ke Move dulu
 	
-	# --- PERBAIKAN DI SINI ---
-	# Kirim 'unit.owner_id' sebagai parameter ke-3
-	var raw_moves = unit.data.get_valid_moves(units_on_board, coord, unit.owner_id)
-	
-	# Filter visual (Cek apakah target ada di peta valid)
+	# 1. Hitung Move biasa
+	var moves = unit.data.get_valid_moves(units_on_board, coord, unit.owner_id)
 	valid_moves_current.clear()
-	for m in raw_moves:
+	for m in moves:
 		if valid_tiles.has(m) and not units_on_board.has(m):
 			valid_moves_current.append(m)
-			
+	
+	# 2. Update Tombol Skill
+	if unit.data.has_active_skill:
+		skill_btn.visible = true
+		skill_btn.text = "USE SKILL"
+		skill_btn.modulate = Color.WHITE
+	else:
+		skill_btn.visible = false
+		
 	queue_redraw()
 
 func deselect_unit():
 	selected_unit_coord = Vector2i(999, 999)
 	valid_moves_current.clear()
+	valid_skill_targets.clear()
+	is_skill_mode = false
+	skill_btn.visible = false
 	queue_redraw()
+	
+func toggle_skill_mode():
+	if selected_unit_coord == Vector2i(999, 999): return
+	
+	is_skill_mode = !is_skill_mode
+	
+	if is_skill_mode:
+		skill_btn.modulate = Color.RED # Indikator tombol merah
+		skill_btn.text = "CANCEL SKILL" # Ubah teks biar jelas
+		
+		# Hitung Target Skill
+		var unit = units_on_board[selected_unit_coord]
+		valid_skill_targets = unit.data.get_skill_targets(units_on_board, selected_unit_coord, unit.owner_id)
+		
+		if valid_skill_targets.is_empty():
+			print("Tidak ada target skill yang valid!")
+	else:
+		skill_btn.modulate = Color.WHITE
+		skill_btn.text = "USE SKILL"
+		valid_skill_targets.clear()
+		
+	queue_redraw() # Wajib panggil ini untuk update gambar
+
+# --- FUNGSI EKSEKUSI SKILL ---
+func execute_skill_on(target_coord: Vector2i):
+	var unit = units_on_board[selected_unit_coord]
+	
+	# Panggil fungsi di CharacterData
+	var success = unit.data.resolve_skill(units_on_board, selected_unit_coord, target_coord, self)
+	
+	if success:
+		unit.mark_as_moved() # Pakai skill hitungannya 1 aksi
+		deselect_unit()
+		$"../GameManager".on_action_performed()
+
+# --- HELPER PINDAH PAKSA (Untuk Claw, Bruiser, dll) ---
+func force_move_unit(from: Vector2i, to: Vector2i):
+	if not units_on_board.has(from): return
+	var unit = units_on_board[from]
+	
+	# Update Data
+	units_on_board.erase(from)
+	units_on_board[to] = unit
+	unit.grid_pos = to
+	
+	# Animasi Cepat
+	var px = hex_to_pixel(to)
+	var tween = create_tween()
+	tween.tween_property(unit, "position", px, 0.3).set_trans(Tween.TRANS_BOUNCE)
+	
+	# Cek Win Condition (Siapa tau ketarik ke sebelah Assassin)
+	# Kita cek untuk kedua pihak
+	check_win_condition(1)
+	check_win_condition(2)
 
 func move_selected_unit_to(target_coord: Vector2i):
 	execute_move(selected_unit_coord, target_coord)
@@ -249,17 +323,29 @@ func highlight_spawn_zones(player_id: int, active: bool):
 	# Nanti bisa tambah visual di sini jika mau
 	queue_redraw()
 
+# --- UPDATE FUNGSI GAMBAR (VISUAL) ---
 func _draw():
-	# Visualisasi Debug Grid (Opsional)
+	# 1. Visualisasi Debug Grid (Opsional - boleh dicomment)
 	# for hex in valid_tiles.keys():
 	# 	draw_circle(hex_to_pixel(hex), 5, Color.RED)
 	
-	# Gambar HIGHLIGHT GERAKAN (Titik Hijau)
-	for move in valid_moves_current:
-		var px = hex_to_pixel(move)
-		draw_circle(px, 15, Color(0, 1, 0, 0.5))
+	# 2. LOGIKA PEMISAH (HIJAU VS MERAH)
+	if is_skill_mode:
+		for target in valid_skill_targets:
+			var px = hex_to_pixel(target)
+			# Gambar Lingkaran Merah
+			draw_circle(px, 20, Color(1, 0.2, 0.2, 0.6))
+			
+			# Tambah Outline Putih biar kelihatan ini "Target"
+			draw_arc(px, 20, 0, TAU, 32, Color.WHITE, 2.0)
+			
+	else:
+		# --- MODE GERAK: GAMBAR HIJAU ---
+		for move in valid_moves_current:
+			var px = hex_to_pixel(move)
+			draw_circle(px, 15, Color(0, 1, 0, 0.5))
 		
-	# Highlight Unit Terpilih (Lingkaran Kuning)
+	# 3. Highlight Unit Terpilih (Kuning) - Selalu muncul
 	if valid_tiles.has(selected_unit_coord):
 		var px = hex_to_pixel(selected_unit_coord)
 		draw_circle(px, 20, Color(1, 1, 0, 0.3))
