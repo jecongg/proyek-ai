@@ -16,12 +16,10 @@ var is_archer : bool = false   # Bisa bantu capture dari jarak 2
 var is_jailer : bool = false   # Memblokir skill musuh sebelah
 var is_protector : bool = false # Tidak bisa didorong/ditarik
 var grants_extra_move_to_leader : bool = false # Efek Vizier
+var can_capture_leader : bool = true # Default TRUE, nanti CUB kita set FALSE
 
 # --- FUNGSI VIRTUAL ---
-func get_valid_moves(board_state: Dictionary, current_pos: Vector2i) -> Array:
-	# Default Gerakan: 1 Langkah ke tetangga (Move to adjacent empty space)
-	# Sesuai Rulebook Hal 4: "Action Phase: Move to adjacent OR Use Ability"
-	
+func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
 	var moves = []
 	var directions = [
 		Vector2i(0, -1), Vector2i(1, -2), Vector2i(1, -1),
@@ -30,8 +28,7 @@ func get_valid_moves(board_state: Dictionary, current_pos: Vector2i) -> Array:
 	
 	for dir in directions:
 		var target = current_pos + dir
-		# Validasi dasar: Hanya bisa gerak ke tile kosong
-		# (Nanti divalidasi lagi di GridManager apakah tile itu valid/ada di map)
+		# Validasi standar (hanya cek kosong)
 		if not board_state.has(target): 
 			moves.append(target)
 			

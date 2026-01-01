@@ -12,7 +12,7 @@ func _init():
 	
 	cost = 0 # Leader biasanya gratis/awal
 
-func get_valid_moves(board_state: Dictionary, current_pos: Vector2i) -> Array:
+func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
 	var moves = []
 	
 	# GUNAKAN ARAH SKEWED HASIL RISET KAMU

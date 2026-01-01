@@ -124,16 +124,17 @@ func select_unit(coord: Vector2i, unit):
 	print("Unit terpilih: ", unit.data.display_name)
 	selected_unit_coord = coord
 	
-	# Minta data langkah valid dari logic CharacterData
-	var raw_moves = unit.data.get_valid_moves(units_on_board, coord)
+	# --- PERBAIKAN DI SINI ---
+	# Kirim 'unit.owner_id' sebagai parameter ke-3
+	var raw_moves = unit.data.get_valid_moves(units_on_board, coord, unit.owner_id)
 	
-	# Filter: Pastikan target ada di dalam papan (Valid Tiles) dan KOSONG
+	# Filter visual (Cek apakah target ada di peta valid)
 	valid_moves_current.clear()
 	for m in raw_moves:
 		if valid_tiles.has(m) and not units_on_board.has(m):
 			valid_moves_current.append(m)
 			
-	queue_redraw() # Update gambar
+	queue_redraw()
 
 func deselect_unit():
 	selected_unit_coord = Vector2i(999, 999)

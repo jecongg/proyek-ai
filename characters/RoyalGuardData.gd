@@ -11,7 +11,7 @@ func _init():
 	card_y = 0
 	cost = 1
 
-func get_valid_moves(board_state: Dictionary, current_pos: Vector2i) -> Array:
+func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
 	var moves = []
 	var directions = [
 		Vector2i(0, -1), Vector2i(1, -2), Vector2i(1, -1),
@@ -27,7 +27,7 @@ func get_valid_moves(board_state: Dictionary, current_pos: Vector2i) -> Array:
 		var unit = board_state[coord]
 		# Kita butuh check owner_id di sini, tapi Resource gak tau owner_id unit ini siapa
 		# Nanti kita harus passing owner_id ke fungsi ini
-		if unit.data.id == "LEADER": 
+		if unit.data.id == "LEADER" and unit.owner_id == my_owner_id:
 			# if unit.owner_id == my_owner_id: (Logic ini harus ditambah di GridManager)
 			my_leader_pos = coord
 			found = true

@@ -10,7 +10,7 @@ func _init():
 	card_y = 0
 	cost = 2
 
-func get_valid_moves(board_state: Dictionary, current_pos: Vector2i) -> Array:
+func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
 	var moves = []
 	
 	# PENTING: Ambil arah dari GridManager yang sudah dikoreksi

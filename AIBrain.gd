@@ -152,28 +152,17 @@ func _clone_board(original: Dictionary) -> Dictionary:
 
 func _get_all_possible_moves(board: Dictionary, player_id: int) -> Array:
 	var moves = []
-	# Struktur Move: { "from": Vector2i, "to": Vector2i }
-	
 	for coord in board:
 		var unit = board[coord]
 		if unit.owner_id == player_id and not unit.has_moved:
-			# Gunakan logic get_valid_moves dari CharacterData
-			# TAPI kita harus passing 'board' virtual kita
-			# Karena get_valid_moves bawaan mungkin crash kalau board isinya bukan Node
-			# Jadi kita harus pastikan CharacterData cukup robust atau kita tiru logicnya.
 			
-			# PENTING: CharacterData.get_valid_moves kamu mengakses 'board_state'
-			# Pastikan logic di CharacterData tidak mengakses properti Node spesifik (seperti position, sprite, dll)
-			# Hanya akses .data, .owner_id, dll.
-			
-			var raw_moves = unit.data.get_valid_moves(board, coord)
+			# --- PERBAIKAN DI SINI ---
+			# Kirim 'unit.owner_id' (atau player_id) ke fungsi ini
+			var raw_moves = unit.data.get_valid_moves(board, coord, unit.owner_id)
 			
 			for target in raw_moves:
-				# Validasi dasar (apakah target ada di grid dan kosong?)
-				# Kita asumsikan GridManager.valid_tiles statis, bisa diakses
 				if grid_manager.valid_tiles.has(target) and not board.has(target):
 					moves.append({ "from": coord, "to": target })
-					
 	return moves
 
 func _apply_move(board: Dictionary, move: Dictionary) -> Dictionary:

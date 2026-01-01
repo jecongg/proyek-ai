@@ -11,7 +11,17 @@ static var library = {
 	"ASSASSIN": AssassinData,
 	"ARCHER": ArcherData,
 	"ROYAL_GUARD": RoyalGuardData,
-	"VIZIER": VizierData
+	"VIZIER": VizierData,
+	"WANDERER": WandererData,
+	"BREWMASTER": BrewmasterData,
+	"BRUISER": BruiserData,
+	"CLAW_LAUNCHER": ClawLauncherData,
+	"ILLUSIONIST": IllusionistData,
+	"MANIPULATOR": ManipulatorData,
+	"JAILER": JailerData,
+	"PROTECTOR": ProtectorData,
+	"NEMESIS": NemesisData,
+	"HERMIT": HermitData
 }
 
 # --- DECK MANAGEMENT ---
@@ -47,11 +57,28 @@ static func get_market_card_id(index: int) -> String:
 		return market_cards[index]
 	return "" # Kosong/Habis
 
+# Di dalam CardDB.gd
+
 static func pick_card_from_market(index: int) -> String:
 	if index < 0 or index >= market_cards.size(): return ""
 	
-	var picked_id = market_cards.pop_at(index) # Ambil kartu
-	refill_market() # Langsung isi penggantinya
+	var picked_id = market_cards[index]
+	
+	# --- HAPUS BAGIAN INI (Kommentari atau Delete) ---
+	# if picked_id != "LEADER":
+	# 	taken_units.append(picked_id)
+	# -------------------------------------------------
+	# Alasannya: Biar GridManager yang nandain taken saat spawn. 
+	# Kalau ditandain di sini, GridManager bakal ditolak saat minta data.
+	
+	# GANTI SLOT DENGAN KARTU BARU
+	if available_deck.size() > 0:
+		var new_card = available_deck.pop_front()
+		market_cards[index] = new_card
+		print("Slot ", index, " diganti dengan ", new_card)
+	else:
+		market_cards[index] = "" 
+	
 	return picked_id
 
 # --- FUNGSI 3: SPAWN DATA (Yang tadi Error) ---

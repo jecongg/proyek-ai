@@ -11,7 +11,7 @@ func _init():
 	card_y = 0
 	cost = 1
 
-func get_valid_moves(board_state: Dictionary, current_pos: Vector2i) -> Array:
+func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
 	var moves = []
 	var directions = [
 		Vector2i(0, -1), Vector2i(1, -2), Vector2i(1, -1),
