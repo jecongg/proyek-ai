@@ -47,18 +47,34 @@ func start_turn(player_id):
 		perform_ai_action_phase()
 
 func perform_ai_action_phase():
+	# Cek apakah masih ada unit yang BISA gerak?
+	# (AIBrain sudah otomatis memfilter unit yang 'has_moved' == true)
+	
+	print("AI Sedang berpikir untuk langkah berikutnya...")
+	
+	# Minta otak AI mencari langkah terbaik untuk unit yang TERSISA
 	var best_move = ai_brain.get_best_move(grid.units_on_board, current_turn)
+	
 	if best_move != null:
 		print("AI Memilih Gerak: ", best_move["from"], " -> ", best_move["to"])
 		grid.execute_move(best_move["from"], best_move["to"])
+		# Setelah ini, GridManager akan memanggil 'on_action_performed'
 	else:
-		print("AI Skip Action.")
-		skip_action_phase()
+		# Jika return null, artinya:
+		# 1. Semua unit sudah gerak (exhausted).
+		# 2. ATAU Unit yang sisa tidak punya langkah aman (Minimax nilai jelek).
+		print("AI Selesai Bergerak (Tidak ada langkah lagi).")
+		skip_action_phase() # BARU PINDAH KE RECRUIT
 
 func on_action_performed():
+	# Tunggu animasi visual selesai
 	await get_tree().create_timer(0.6).timeout
+	
 	if current_turn == 2:
-		skip_action_phase()
+		# --- PERUBAHAN PENTING DI SINI ---
+		# Jangan langsung skip_action_phase()!
+		# Panggil lagi fungsi berpikir AI untuk mencari langkah unit selanjutnya.
+		perform_ai_action_phase()
 
 # --- RECRUITMENT ---
 func skip_action_phase():
