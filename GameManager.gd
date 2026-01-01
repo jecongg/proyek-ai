@@ -1,6 +1,6 @@
 extends Node
 
-enum State { ACTION_PHASE, RECRUIT_SELECT, RECRUIT_PLACE }
+enum State { ACTION_PHASE, RECRUIT_SELECT, RECRUIT_PLACE, GAME_OVER }
 
 var current_state = State.ACTION_PHASE
 var current_turn = 1
@@ -49,6 +49,7 @@ func start_turn(player_id):
 func perform_ai_action_phase():
 	# Cek apakah masih ada unit yang BISA gerak?
 	# (AIBrain sudah otomatis memfilter unit yang 'has_moved' == true)
+	if current_state == State.GAME_OVER: return 
 	
 	print("AI Sedang berpikir untuk langkah berikutnya...")
 	
@@ -67,6 +68,7 @@ func perform_ai_action_phase():
 		skip_action_phase() # BARU PINDAH KE RECRUIT
 
 func on_action_performed():
+	if current_state == State.GAME_OVER: return
 	# Tunggu animasi visual selesai
 	await get_tree().create_timer(0.6).timeout
 	
@@ -243,3 +245,16 @@ func find_ai_spawn_pos() -> Vector2i:
 		if not grid.units_on_board.has(zone):
 			return zone
 	return Vector2i(999, 999) # Penuh
+	
+func trigger_game_over(winner_id: int):
+	if current_state == State.GAME_OVER: return # Biar gak panggil double
+	
+	current_state = State.GAME_OVER
+	print("!!! GAME OVER !!! Pemenang: Player ", winner_id)
+	
+	# Update UI Text
+	info_label.text = "GAME OVER!\nPEMENANG: PLAYER " + str(winner_id)
+	info_label.modulate = Color(1, 1, 0) # Warna Kuning Emas
+	
+	# Matikan UI Recruit kalau sedang terbuka
+	recruit_ui.close_market()

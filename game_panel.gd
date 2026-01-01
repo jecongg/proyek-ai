@@ -16,9 +16,9 @@ func _ready():
 
 # Fungsi ini jalan saat tombol diklik
 func _on_skip_pressed():
-	# Cek dulu, apakah boleh skip? (Hanya boleh pas Fase Aksi)
+	# Tambahkan Cek GAME_OVER
+	if game_manager.current_state == game_manager.State.GAME_OVER:
+		return
+
 	if game_manager.current_state == game_manager.State.ACTION_PHASE:
-		print("Tombol Skip ditekan!")
 		game_manager.skip_action_phase()
-	else:
-		print("Bukan saatnya skip!")

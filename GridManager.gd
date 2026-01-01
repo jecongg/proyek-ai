@@ -164,8 +164,12 @@ func move_selected_unit_to(target_coord: Vector2i):
 	## 5. Reset Seleksi
 	#deselect_unit()
 
-# --- WIN CONDITION ---
 func check_win_condition(attacker_id: int):
+	var game_manager = $"../GameManager"
+	
+	# Kalau game sudah over, jangan cek lagi
+	if game_manager.current_state == game_manager.State.GAME_OVER: return
+
 	var enemy_id = 1
 	if attacker_id == 1: enemy_id = 2
 	
@@ -190,12 +194,14 @@ func check_win_condition(attacker_id: int):
 			var unit = units_on_board[n]
 			if unit.owner_id == attacker_id:
 				enemy_count_around += 1
-				if unit.data.is_assassin: # Assassin Instant Win
+				if unit.data.is_assassin: 
 					print("MENANG! Assassin Kill.")
+					game_manager.trigger_game_over(attacker_id) # <--- PANGGIL INI
 					return
 	
 	if enemy_count_around >= 2:
 		print("MENANG! Capture Condition.")
+		game_manager.trigger_game_over(attacker_id)
 		return
 
 	# Cek SURROUND
@@ -206,6 +212,7 @@ func check_win_condition(attacker_id: int):
 	
 	if free_space == 0:
 		print("MENANG! Surround Condition.")
+		game_manager.trigger_game_over(attacker_id)
 
 # --- RUMUS MATEMATIKA ---
 func hex_to_pixel(hex: Vector2i) -> Vector2:
