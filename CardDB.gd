@@ -21,7 +21,8 @@ static var library = {
 	"JAILER": JailerData,
 	"PROTECTOR": ProtectorData,
 	"NEMESIS": NemesisData,
-	"HERMIT": HermitData
+	"HERMIT": HermitData,
+	"CUB": CubData
 }
 
 # --- DECK MANAGEMENT ---
@@ -37,7 +38,7 @@ static func initialize_deck():
 	
 	# Masukkan unit ke deck
 	for key in library.keys():
-		if key != "LEADER":
+		if key != "LEADER" and key != "CUB": 
 			# CUKUP SEKALI SAJA biar unik
 			available_deck.append(key)
 			

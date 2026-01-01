@@ -74,3 +74,16 @@ func highlight_selected_card(index):
 			buttons[i].modulate = Color(1, 1, 0) # Jadi Kuning (Terpilih)
 		else:
 			buttons[i].modulate = Color(0.5, 0.5, 0.5) # Jadi Gelap (Tidak terpilih)
+			
+func set_buttons_active(is_active: bool):
+	for btn in buttons:
+		# Kita set disabled. 
+		# Jika is_active = true, disabled = false (Nyala).
+		# Jika is_active = false, disabled = true (Mati).
+		btn.disabled = !is_active 
+		
+		# Opsional: Ubah warna biar kelihatan kalau lagi dikunci
+		if is_active:
+			btn.modulate = Color.WHITE
+		else:
+			btn.modulate = Color(0.5, 0.5, 0.5) # Gelap

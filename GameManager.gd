@@ -8,6 +8,7 @@ var p2_first_turn_bonus = true
 var recruits_remaining = 0 
 var selected_card_index : int = -1 
 var selected_card_id = ""
+var pending_cub_spawn : bool = false 
 
 @onready var grid = $"../Board"
 @export var recruit_ui : Control 
@@ -106,19 +107,47 @@ func try_place_recruit(coords: Vector2i):
 		print("Bukan Zona Spawn Anda!")
 		return
 		
-	# 1. PICK SEKARANG (Hapus dari market & Ganti baru)
-	# Karena CardDB sudah diperbaiki, dia TIDAK akan menandai taken dulu.
-	var final_card_id = CardDB.pick_card_from_market(selected_card_index)
+	# --- LOGIKA CABANG ---
 	
-	if final_card_id == "": return
+	if pending_cub_spawn:
+		# KASUS A: MELETAKKAN CUB (Langkah 2)
+		grid.spawn_unit_by_id("CUB", coords, current_turn)
+		print("Cub berhasil diletakkan.")
+		
+		pending_cub_spawn = false
+		
+		# --- PERBAIKAN 1: BUKA KUNCI UI ---
+		recruit_ui.set_buttons_active(true) 
+		# ----------------------------------
+		
+		finish_recruit_step()
+		
+	else:
+		# KASUS B: MELETAKKAN KARTU NORMAL (Langkah 1)
+		var final_card_id = CardDB.pick_card_from_market(selected_card_index)
+		if final_card_id == "": return
 
-	# 2. SPAWN (GridManager akan menandai taken)
-	grid.spawn_unit_by_id(final_card_id, coords, current_turn)
+		grid.spawn_unit_by_id(final_card_id, coords, current_turn)
+		
+		if final_card_id == "HERMIT":
+			print("Hermit diletakkan. Silakan letakkan CUB!")
+			pending_cub_spawn = true 
+			
+			recruit_ui.update_visuals() # Refresh gambar jadi baru
+			
+			# --- PERBAIKAN 2: KUNCI UI ---
+			# Supaya player TIDAK BISA klik kartu lain sebelum naruh Cub
+			recruit_ui.set_buttons_active(false)
+			# -----------------------------
+			
+			return 
+			
+		# Kartu biasa (bukan Hermit)
+		recruit_ui.update_visuals()
+		finish_recruit_step()
+		
+func finish_recruit_step():
 	grid.highlight_spawn_zones(current_turn, false)
-	
-	# 3. UPDATE UI
-	recruit_ui.update_visuals()
-	
 	recruits_remaining -= 1
 	selected_card_index = -1
 	selected_card_id = ""
@@ -140,41 +169,39 @@ func do_ai_recruit():
 	
 	while recruits_remaining > 0:
 		var best_idx = -1
-		var best_value = -1 # Ganti best_cost jadi best_value
+		var best_value = -1
 		
-		# AI MEMILIH KARTU BERDASARKAN TIER LIST (ai_value)
+		# (Logic AI memilih kartu SAMA SEPERTI SEBELUMNYA)
 		for i in range(3): 
 			var card_id = CardDB.get_market_card_id(i)
 			if card_id == "": continue
-			
 			if CardDB.library.has(card_id):
 				var d = CardDB.library[card_id].new()
-				
-				# Cek apakah nilainya lebih tinggi dari pilihan sebelumnya?
 				if d.ai_value > best_value:
 					best_value = d.ai_value
 					best_idx = i
-				
-				# OPSIONAL: Jika nilai sama, pilih random biar AI tidak monoton
-				elif d.ai_value == best_value:
-					if randf() > 0.5: # 50% chance ganti pilihan
-						best_idx = i
 		
 		if best_idx != -1:
 			recruit_ui.highlight_selected_card(best_idx) 
 			await get_tree().create_timer(1.0).timeout
 			
 			var card_id = CardDB.pick_card_from_market(best_idx)
-			print("AI Membeli Unit: ", card_id, " (Value: ", best_value, ")")
+			print("AI Membeli Unit: ", card_id)
 			
-			var spawn_pos = Vector2i(999, 999)
-			for zone in grid.p2_spawn_zones:
-				if not grid.units_on_board.has(zone):
-					spawn_pos = zone
-					break 
-			
-			if spawn_pos != Vector2i(999, 999):
-				grid.spawn_unit_by_id(card_id, spawn_pos, 2)
+			# 1. Cari Posisi untuk UNIT UTAMA
+			var spawn_pos_1 = find_ai_spawn_pos()
+			if spawn_pos_1 != Vector2i(999, 999):
+				grid.spawn_unit_by_id(card_id, spawn_pos_1, 2)
+				
+				# 2. KHUSUS HERMIT: Cari Posisi ke-2 untuk CUB
+				if card_id == "HERMIT":
+					await get_tree().create_timer(0.5).timeout # Jeda dikit
+					var spawn_pos_2 = find_ai_spawn_pos() # Cari tempat kosong lagi
+					
+					if spawn_pos_2 != Vector2i(999, 999):
+						print("AI Meletakkan CUB")
+						grid.spawn_unit_by_id("CUB", spawn_pos_2, 2)
+				
 				recruit_ui.update_visuals()
 		
 		recruits_remaining -= 1
@@ -194,3 +221,9 @@ func count_units(player_id) -> int:
 		if unit.owner_id == player_id:
 			count += 1
 	return count
+
+func find_ai_spawn_pos() -> Vector2i:
+	for zone in grid.p2_spawn_zones:
+		if not grid.units_on_board.has(zone):
+			return zone
+	return Vector2i(999, 999) # Penuh
