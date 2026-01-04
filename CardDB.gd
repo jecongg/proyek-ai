@@ -10,19 +10,19 @@ static var library = {
 	"RIDER": RiderData,
 	"ASSASSIN": AssassinData,
 	"ARCHER": ArcherData,
-	#"ROYAL_GUARD": RoyalGuardData,
-	#"VIZIER": VizierData,
-	#"WANDERER": WandererData,
-	#"BREWMASTER": BrewmasterData,
-	#"BRUISER": BruiserData,
-	#"CLAW_LAUNCHER": ClawLauncherData,
-	#"ILLUSIONIST": IllusionistData,
-	#"MANIPULATOR": ManipulatorData,
-	#"JAILER": JailerData,
-	#"PROTECTOR": ProtectorData,
-	#"NEMESIS": NemesisData,
-	#"HERMIT": HermitData,
-	#"CUB": CubData
+	"ROYAL_GUARD": RoyalGuardData,
+	"VIZIER": VizierData,
+	"WANDERER": WandererData,
+	"BREWMASTER": BrewmasterData,
+	"BRUISER": BruiserData,
+	"CLAW_LAUNCHER": ClawLauncherData,
+	"ILLUSIONIST": IllusionistData,
+	"MANIPULATOR": ManipulatorData,
+	"JAILER": JailerData,
+	"PROTECTOR": ProtectorData,
+	"NEMESIS": NemesisData,
+	"HERMIT": HermitData,
+	"CUB": CubData
 }
 
 # --- DECK MANAGEMENT ---

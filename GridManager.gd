@@ -232,6 +232,8 @@ func execute_move(from_coord: Vector2i, to_coord: Vector2i):
 	unit.grid_pos = to_coord
 	unit.mark_as_moved() 
 	
+	check_nemesis_trigger(unit) 
+	
 	# 4. Win Condition
 	check_win_condition(unit.owner_id)
 	
@@ -244,6 +246,22 @@ func force_move_unit(from: Vector2i, to: Vector2i):
 	if not units_on_board.has(from): return
 	var unit = units_on_board[from]
 	
+	# --- CEK PROTECTOR ---
+	# Kita cek: Apakah unit yang mau dipindah ini dilindungi?
+	# "initiator_is_enemy" = true (Asumsi skill selalu agresif jika trigger force move, 
+	# KECUALI Brewmaster. Tapi untuk simplifikasi, kita cek owner).
+	
+	# Logic Cerdas: Siapa yang sedang main? (Current Turn)
+	var current_player = $"../GameManager".current_turn
+	var is_enemy_action = (unit.owner_id != current_player)
+	
+	if is_unit_protected(from, is_enemy_action):
+		print("AKSI DIBLOKIR PROTECTOR!")
+		# Opsional: Kasih efek visual 'Shield' atau suara 'Clang'
+		return
+	# ---------------------
+	
+	# ... (Sisa kode force_move_unit sama seperti sebelumnya) ...
 	units_on_board.erase(from)
 	units_on_board[to] = unit
 	unit.grid_pos = to
@@ -252,15 +270,32 @@ func force_move_unit(from: Vector2i, to: Vector2i):
 	var tween = create_tween()
 	tween.tween_property(unit, "position", px, 0.3).set_trans(Tween.TRANS_BOUNCE)
 	
+	if unit.data.id != "NEMESIS":
+		check_nemesis_trigger(unit)
+	
 	check_win_condition(1)
 	check_win_condition(2)
 
 # Helper Tukar Posisi (Untuk Illusionist)
 func swap_units(pos_a: Vector2i, pos_b: Vector2i):
 	if not units_on_board.has(pos_a) or not units_on_board.has(pos_b): return
-		
+	
 	var unit_a = units_on_board[pos_a]
 	var unit_b = units_on_board[pos_b]
+	
+	var current_player = $"../GameManager".current_turn
+	
+	# Cek Proteksi untuk Unit A
+	var a_is_enemy = (unit_a.owner_id != current_player)
+	if is_unit_protected(pos_a, a_is_enemy):
+		print("Swap Gagal! Unit A dilindungi Protector.")
+		return
+
+	# Cek Proteksi untuk Unit B
+	var b_is_enemy = (unit_b.owner_id != current_player)
+	if is_unit_protected(pos_b, b_is_enemy):
+		print("Swap Gagal! Unit B dilindungi Protector.")
+		return
 	
 	# Tukar Data
 	units_on_board[pos_a] = unit_b
@@ -314,7 +349,7 @@ func check_win_condition(attacker_id: int):
 					return
 				
 				# Archer tidak bisa capture kalau nempel
-				if not unit.data.is_archer:
+				if not unit.data.is_archer and unit.data.can_capture_leader:
 					threat_count += 1
 	
 	# B. Cek Archer Jauh (Jarak 2)
@@ -429,3 +464,90 @@ func is_unit_protected(unit_pos: Vector2i, initiator_is_enemy: bool) -> bool:
 				return true
 				
 	return false
+
+# Fungsi ini dipanggil setiap kali ada unit yang bergerak
+func check_nemesis_trigger(moved_unit):
+	# Syarat: Unit yang bergerak HARUS Leader
+	if moved_unit.data.id != "LEADER": return
+	
+	print("Leader bergerak! Memicu Nemesis...")
+	
+	var leader_owner = moved_unit.owner_id
+	var nemesis_owner = 1 if leader_owner == 2 else 2
+	
+	# Cari Nemesis milik musuh
+	var nemesis_unit = null
+	var nemesis_pos = Vector2i.ZERO
+	
+	for coord in units_on_board:
+		var u = units_on_board[coord]
+		if u.data.id == "NEMESIS" and u.owner_id == nemesis_owner:
+			nemesis_unit = u
+			nemesis_pos = coord
+			break
+	
+	if nemesis_unit == null: return # Gak ada Nemesis di papan
+	
+	# --- LOGIKA GERAK NEMESIS (Kejar Leader) ---
+	# Nemesis harus gerak 2 langkah mendekati Leader yang barusan gerak (moved_unit)
+	var target_pos = moved_unit.grid_pos
+	
+	# Langkah 1
+	var step1 = get_step_towards(nemesis_pos, target_pos)
+	if step1 == nemesis_pos: return # Gak bisa gerak (terblokir)
+	
+	# Simulasikan langkah 1
+	var next_pos = step1
+	
+	# Langkah 2 (Nemesis MUST move 2 spaces if possible)
+	var step2 = get_step_towards(step1, target_pos)
+	
+	# Jika langkah 2 valid dan bukan balik ke awal (walaupun get_step_towards sudah handle maju)
+	if step2 != step1 and not units_on_board.has(step2):
+		next_pos = step2
+	
+	# EKSEKUSI GERAK OTOMATIS
+	print("Nemesis mengejar ke ", next_pos)
+	force_move_unit_no_trigger(nemesis_pos, next_pos)
+
+# Helper Pathfinding Sederhana (Greedy: Cari tetangga yang jaraknya paling dekat ke target)
+func get_step_towards(current: Vector2i, target: Vector2i) -> Vector2i:
+	var best_pos = current
+	var min_dist = 9999
+	
+	var current_dist = get_hex_distance(current, target)
+	
+	for dir in DIRECTIONS:
+		var check = current + dir
+		
+		# Validasi: Harus di papan & Kosong
+		if valid_tiles.has(check) and not units_on_board.has(check):
+			var dist = get_hex_distance(check, target)
+			
+			# Kita cari yang jaraknya makin dekat (< current_dist)
+			if dist < min_dist:
+				min_dist = dist
+				best_pos = check
+				
+	return best_pos
+
+# Helper Jarak Hex
+func get_hex_distance(a: Vector2i, b: Vector2i) -> int:
+	var vec = a - b
+	return (abs(vec.x) + abs(vec.y) + abs(vec.x + vec.y)) / 2
+
+# Helper Pindah Tanpa Memicu Loop (PENTING)
+func force_move_unit_no_trigger(from: Vector2i, to: Vector2i):
+	if not units_on_board.has(from): return
+	var unit = units_on_board[from]
+	
+	units_on_board.erase(from)
+	units_on_board[to] = unit
+	unit.grid_pos = to
+	
+	var px = hex_to_pixel(to)
+	var tween = create_tween()
+	tween.tween_property(unit, "position", px, 0.4)
+	
+	check_win_condition(1)
+	check_win_condition(2)
