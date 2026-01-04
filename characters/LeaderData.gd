@@ -14,24 +14,33 @@ func _init():
 
 func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
 	var moves = []
-	
-	# GUNAKAN ARAH SKEWED HASIL RISET KAMU
-	# (Jangan pakai Vector2i(1,0) yang standar matematika)
-	var valid_directions = [
-		Vector2i(0, -1),  # Atas Kiri
-		Vector2i(1, -2),  # Atas Kanan
-		Vector2i(1, -1),  # Kanan
-		Vector2i(0, 1),   # Bawah Kanan
-		Vector2i(-1, 2),  # Bawah Kiri
-		Vector2i(-1, 1)   # Kiri
+	const DIRECTIONS = [
+		Vector2i(0, -1), Vector2i(1, -2), Vector2i(1, -1),
+		Vector2i(0, 1), Vector2i(-1, 2), Vector2i(-1, 1)
 	]
 	
-	for dir in valid_directions:
-		# Leader bergerak 1 langkah
-		var target_pos = current_pos + dir
+	# 1. CEK KEBERADAAN VIZIER TEMAN
+	var has_vizier = false
+	for unit in board_state.values():
+		if unit.owner_id == my_owner_id and unit.data.id == "VIZIER":
+			has_vizier = true
+			break
+	
+	# 2. HITUNG GERAKAN
+	for dir in DIRECTIONS:
+		var pos1 = current_pos + dir
 		
-		# Validasi sederhana:
-		# Nanti di GridManager kita cek apakah target_pos ada di valid_tiles
-		moves.append(target_pos)
+		# Langkah 1 (Standar)
+		if not board_state.has(pos1):
+			moves.append(pos1)
 			
+			# Langkah 2 (Jika punya Vizier)
+			if has_vizier:
+				for dir2 in DIRECTIONS:
+					var pos2 = pos1 + dir2
+					# Tidak boleh balik ke posisi awal
+					if not board_state.has(pos2) and pos2 != current_pos:
+						if not moves.has(pos2):
+							moves.append(pos2)
+							
 	return moves

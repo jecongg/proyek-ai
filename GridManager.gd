@@ -144,13 +144,18 @@ func select_unit(coord: Vector2i, unit):
 		if valid_tiles.has(m) and not units_on_board.has(m):
 			valid_moves_current.append(m)
 	
-	# Tampilkan Tombol Skill jika punya
-	if unit.data.has_active_skill:
+	# --- LOGIKA JAILER ---
+	var silenced = is_unit_silenced(coord, unit.owner_id)
+	
+	# Tampilkan Tombol Skill HANYA JIKA punya skill DAN TIDAK SILENCED
+	if unit.data.has_active_skill and not silenced:
 		skill_btn.visible = true
 		skill_btn.text = "USE SKILL"
 		skill_btn.modulate = Color.WHITE
 	else:
 		skill_btn.visible = false
+		if silenced and unit.data.has_active_skill:
+			print("Unit ini terkena efek Jailer! Skill dikunci.")
 		
 	queue_redraw()
 
@@ -391,3 +396,36 @@ func _draw():
 	if valid_tiles.has(selected_unit_coord):
 		var px = hex_to_pixel(selected_unit_coord)
 		draw_circle(px, 20, Color(1, 1, 0, 0.3))
+
+func is_unit_silenced(unit_pos: Vector2i, owner_id: int) -> bool:
+	# Cek 6 tetangga
+	var neighbors = get_neighbors(unit_pos)
+	for n in neighbors:
+		if units_on_board.has(n):
+			var neighbor_unit = units_on_board[n]
+			# Jika tetangga adalah MUSUH dan dia adalah JAILER
+			if neighbor_unit.owner_id != owner_id and neighbor_unit.data.is_jailer:
+				return true # Terkena Silence!
+	return false
+
+# Cek apakah unit ini dilindungi PROTECTOR (Tidak bisa digeser Musuh)
+# initiator_is_enemy: TRUE jika skill berasal dari musuh
+func is_unit_protected(unit_pos: Vector2i, initiator_is_enemy: bool) -> bool:
+	if not units_on_board.has(unit_pos): return false
+	if not initiator_is_enemy: return false # Kalau teman sendiri yang geser (Brewmaster), boleh.
+	
+	var unit = units_on_board[unit_pos]
+	
+	# Cek 1: Apakah dia sendiri Protector?
+	if unit.data.is_protector: return true
+	
+	# Cek 2: Apakah ada Protector teman di sebelahnya?
+	var neighbors = get_neighbors(unit_pos)
+	for n in neighbors:
+		if units_on_board.has(n):
+			var neighbor = units_on_board[n]
+			# Jika tetangga adalah TEMAN dan dia PROTECTOR
+			if neighbor.owner_id == unit.owner_id and neighbor.data.is_protector:
+				return true
+				
+	return false
