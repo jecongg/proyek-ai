@@ -2,29 +2,28 @@ extends Node2D
 
 # --- KONFIGURASI ---
 @export var hex_size : float = 268.5
-@export var y_stretch : float = 0.356 # Angka presisi hasil riset kita
+@export var y_stretch : float = 0.356
 @export var grid_offset : Vector2 = Vector2(-2, -1)
 
-# --- DATA GRID ---
+# --- DATA ---
 var valid_tiles = {}
 var unit_scene = preload("res://Unit.tscn")
 var units_on_board = {} 
 
-# --- ZONA ---
+# --- ZONA & LEADER ---
 var p1_spawn_zones = []
 var p2_spawn_zones = []
 var p1_leader_start : Vector2i
 var p2_leader_start : Vector2i
 
+# --- LOGIC GAMEPLAY ---
 var is_skill_mode : bool = false
 var valid_skill_targets : Array = []
+var selected_unit_coord : Vector2i = Vector2i(999, 999) 
+var valid_moves_current : Array = [] 
+
 @onready var skill_btn = $"../UILayer/BtnSkill"
 
-# --- LOGIC SELEKSI & GERAK ---
-var selected_unit_coord : Vector2i = Vector2i(999, 999) # Koordinat unit yg dipilih
-var valid_moves_current : Array = [] # Daftar kotak tujuan yg boleh diinjak
-
-# Konstanta Arah (Sesuai Skewed Grid kita)
 const DIRECTIONS = [
 	Vector2i(0, -1), Vector2i(1, -2), Vector2i(1, -1),
 	Vector2i(0, 1), Vector2i(-1, 2), Vector2i(-1, 1)
@@ -34,7 +33,9 @@ func _ready():
 	setup_board_map()
 	queue_redraw()
 
-# --- SETUP PETA ---
+# ==========================================
+# 1. SETUP & SPAWN
+# ==========================================
 func setup_board_map():
 	valid_tiles.clear()
 	
@@ -60,10 +61,9 @@ func is_spawn_zone(coord: Vector2i, player_id: int) -> bool:
 	if player_id == 1: return coord in p1_spawn_zones
 	else: return coord in p2_spawn_zones
 
-# --- SPAWN LOGIC ---
 func spawn_unit_by_id(id_string: String, coords: Vector2i, owner_id: int):
 	var data = CardDB.get_unit_data(id_string)
-	if data == null: return # Gagal ambil data
+	if data == null: return
 
 	if not valid_tiles.has(coords) or units_on_board.has(coords):
 		print("Error: Tile tidak valid atau penuh!")
@@ -75,32 +75,34 @@ func spawn_unit_by_id(id_string: String, coords: Vector2i, owner_id: int):
 	new_unit.setup(data, coords, owner_id)
 	
 	units_on_board[coords] = new_unit
-	if id_string != "LEADER": # Leader tidak ditandai taken
+	if id_string != "LEADER":
 		CardDB.taken_units.append(id_string)
 
-# --- INPUT HANDLING (PENTING) ---
+# ==========================================
+# 2. INPUT HANDLING
+# ==========================================
 func _unhandled_input(event):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var local_mouse = get_local_mouse_position()
 		var hex_coord = pixel_to_hex(local_mouse)
 		var game_manager = $"../GameManager"
 		
+		# Cek apakah klik di luar papan (kecuali sedang Skill Mode mungkin targetnya UI, tapi ini aman)
 		if not valid_tiles.has(hex_coord):
 			deselect_unit()
 			return
 
-		# KASUS 1: FASE RECRUIT (Letakkan Unit)
+		# FASE RECRUIT
 		if game_manager.current_state == game_manager.State.RECRUIT_PLACE:
 			game_manager.try_place_recruit(hex_coord)
 			return
 
-		# KASUS 2: FASE ACTION (Gerakkan Unit)
+		# FASE ACTION
 		if game_manager.current_state == game_manager.State.ACTION_PHASE:
 			handle_action_input(hex_coord, game_manager.current_turn)
 
-# --- LOGIKA GERAKAN ---
 func handle_action_input(clicked_coord: Vector2i, current_player: int):
-	# A. KLIK UNIT SENDIRI (Select)
+	# A. KLIK UNIT SENDIRI -> SELECT
 	if units_on_board.has(clicked_coord):
 		var unit = units_on_board[clicked_coord]
 		if unit.owner_id == current_player:
@@ -109,41 +111,40 @@ func handle_action_input(clicked_coord: Vector2i, current_player: int):
 			else:
 				print("Unit exhausted.")
 		else:
-			# KLIK MUSUH?
-			# Claw Launcher sekarang targetnya TILE KOSONG, bukan Unit Musuh langsung.
-			# Tapi karakter lain (seperti Bruiser) mungkin targetnya Musuh.
-			# Jadi kita cek dua-duanya.
+			# KLIK MUSUH (Hanya valid jika Skill Mode dan itu target skill)
 			if is_skill_mode and clicked_coord in valid_skill_targets:
 				execute_skill_on(clicked_coord)
 			else:
 				deselect_unit()
 	
-	# B. KLIK TILE KOSONG
+	# B. KLIK TILE KOSONG ATAU TARGET SKILL
 	else:
-		# --- UPDATE DI SINI ---
-		# Jika Skill Mode aktif DAN tile kosong ini adalah target valid (Indikator Merah)
+		# Prioritas 1: Skill Mode (Target Merah)
 		if is_skill_mode and clicked_coord in valid_skill_targets:
 			execute_skill_on(clicked_coord)
 		
-		# Jika Move Mode (Hijau)
+		# Prioritas 2: Move Mode (Target Hijau)
 		elif clicked_coord in valid_moves_current and not is_skill_mode:
 			move_selected_unit_to(clicked_coord)
 			
 		else:
 			deselect_unit()
-			
+
+# ==========================================
+# 3. SELECTION & MODES
+# ==========================================
 func select_unit(coord: Vector2i, unit):
 	selected_unit_coord = coord
-	is_skill_mode = false # Reset mode ke Move dulu
+	is_skill_mode = false
 	
-	# 1. Hitung Move biasa
+	# Hitung Moves (Hijau)
 	var moves = unit.data.get_valid_moves(units_on_board, coord, unit.owner_id)
 	valid_moves_current.clear()
 	for m in moves:
 		if valid_tiles.has(m) and not units_on_board.has(m):
 			valid_moves_current.append(m)
 	
-	# 2. Update Tombol Skill
+	# Tampilkan Tombol Skill jika punya
 	if unit.data.has_active_skill:
 		skill_btn.visible = true
 		skill_btn.text = "USE SKILL"
@@ -167,12 +168,17 @@ func toggle_skill_mode():
 	is_skill_mode = !is_skill_mode
 	
 	if is_skill_mode:
-		skill_btn.modulate = Color.RED # Indikator tombol merah
-		skill_btn.text = "CANCEL SKILL" # Ubah teks biar jelas
+		skill_btn.modulate = Color.RED
+		skill_btn.text = "CANCEL SKILL"
 		
-		# Hitung Target Skill
 		var unit = units_on_board[selected_unit_coord]
-		valid_skill_targets = unit.data.get_skill_targets(units_on_board, selected_unit_coord, unit.owner_id)
+		var raw_targets = unit.data.get_skill_targets(units_on_board, selected_unit_coord, unit.owner_id)
+		
+		# Filter hanya target yang ada di papan
+		valid_skill_targets.clear()
+		for t in raw_targets:
+			if valid_tiles.has(t):
+				valid_skill_targets.append(t)
 		
 		if valid_skill_targets.is_empty():
 			print("Tidak ada target skill yang valid!")
@@ -181,67 +187,97 @@ func toggle_skill_mode():
 		skill_btn.text = "USE SKILL"
 		valid_skill_targets.clear()
 		
-	queue_redraw() # Wajib panggil ini untuk update gambar
+	queue_redraw()
 
-# --- FUNGSI EKSEKUSI SKILL ---
+# ==========================================
+# 4. EXECUTION (MOVE / SKILL / SWAP)
+# ==========================================
+
+# Eksekusi Gerak Normal (Jalan Kaki)
+func move_selected_unit_to(target_coord: Vector2i):
+	# Panggil fungsi general execute_move
+	execute_move(selected_unit_coord, target_coord)
+
+# Eksekusi Skill (Dipanggil saat klik target Merah)
 func execute_skill_on(target_coord: Vector2i):
 	var unit = units_on_board[selected_unit_coord]
-	
-	# Panggil fungsi di CharacterData
 	var success = unit.data.resolve_skill(units_on_board, selected_unit_coord, target_coord, self)
 	
 	if success:
-		unit.mark_as_moved() # Pakai skill hitungannya 1 aksi
+		unit.mark_as_moved() 
 		deselect_unit()
 		$"../GameManager".on_action_performed()
 
-# --- HELPER PINDAH PAKSA (Untuk Claw, Bruiser, dll) ---
+# Fungsi General Pindah Unit (Dipakai AI dan Player Move)
+func execute_move(from_coord: Vector2i, to_coord: Vector2i):
+	if not units_on_board.has(from_coord): return
+	
+	var unit = units_on_board[from_coord]
+	
+	# 1. Update Data
+	units_on_board.erase(from_coord)
+	units_on_board[to_coord] = unit
+	
+	# 2. Visual
+	var pixel_target = hex_to_pixel(to_coord)
+	var tween = create_tween()
+	tween.tween_property(unit, "position", pixel_target, 0.5)
+	
+	# 3. Status
+	unit.grid_pos = to_coord
+	unit.mark_as_moved() 
+	
+	# 4. Win Condition
+	check_win_condition(unit.owner_id)
+	
+	# 5. Selesai
+	deselect_unit()
+	$"../GameManager".on_action_performed()
+
+# Helper Pindah Paksa (Untuk Push/Pull Skill)
 func force_move_unit(from: Vector2i, to: Vector2i):
 	if not units_on_board.has(from): return
 	var unit = units_on_board[from]
 	
-	# Update Data
 	units_on_board.erase(from)
 	units_on_board[to] = unit
 	unit.grid_pos = to
 	
-	# Animasi Cepat
 	var px = hex_to_pixel(to)
 	var tween = create_tween()
 	tween.tween_property(unit, "position", px, 0.3).set_trans(Tween.TRANS_BOUNCE)
 	
-	# Cek Win Condition (Siapa tau ketarik ke sebelah Assassin)
-	# Kita cek untuk kedua pihak
 	check_win_condition(1)
 	check_win_condition(2)
 
-func move_selected_unit_to(target_coord: Vector2i):
-	execute_move(selected_unit_coord, target_coord)
-	#var unit = units_on_board[selected_unit_coord]
-	#
-	## 1. Update Data Dictionary
-	#units_on_board.erase(selected_unit_coord)
-	#units_on_board[target_coord] = unit
-	#
-	## 2. Update Visual (Animasi)
-	#var pixel_target = hex_to_pixel(target_coord)
-	#var tween = create_tween()
-	#tween.tween_property(unit, "position", pixel_target, 0.2)
-	#
-	## 3. Update Data Unit
-	#unit.grid_pos = target_coord
-	#unit.mark_as_moved() # Tandai sudah gerak
-	#
-	## 4. Cek Win Condition
-	#check_win_condition(unit.owner_id)
-	#
-	## 5. Reset Seleksi
-	#deselect_unit()
+# Helper Tukar Posisi (Untuk Illusionist)
+func swap_units(pos_a: Vector2i, pos_b: Vector2i):
+	if not units_on_board.has(pos_a) or not units_on_board.has(pos_b): return
+		
+	var unit_a = units_on_board[pos_a]
+	var unit_b = units_on_board[pos_b]
+	
+	# Tukar Data
+	units_on_board[pos_a] = unit_b
+	units_on_board[pos_b] = unit_a
+	unit_a.grid_pos = pos_b
+	unit_b.grid_pos = pos_a
+	
+	# Animasi Silang
+	var px_a = hex_to_pixel(pos_a)
+	var px_b = hex_to_pixel(pos_b)
+	var tween = create_tween().set_parallel(true)
+	tween.tween_property(unit_a, "position", px_b, 0.3).set_trans(Tween.TRANS_CUBIC)
+	tween.tween_property(unit_b, "position", px_a, 0.3).set_trans(Tween.TRANS_CUBIC)
+	
+	check_win_condition(1)
+	check_win_condition(2)
 
+# ==========================================
+# 5. WIN CONDITION
+# ==========================================
 func check_win_condition(attacker_id: int):
 	var game_manager = $"../GameManager"
-	
-	# Kalau game sudah over, jangan cek lagi
 	if game_manager.current_state == game_manager.State.GAME_OVER: return
 
 	var enemy_id = 1
@@ -259,27 +295,40 @@ func check_win_condition(attacker_id: int):
 	
 	if not leader_found: return 
 	
-	var neighbors = get_neighbors(enemy_leader_pos)
+	var threat_count = 0
 	
-	# Cek CAPTURE
-	var enemy_count_around = 0
-	for n in neighbors:
-		if units_on_board.has(n):
-			var unit = units_on_board[n]
+	# A. Cek Tetangga (Jarak 1)
+	for dir in DIRECTIONS:
+		var neighbor = enemy_leader_pos + dir
+		if units_on_board.has(neighbor):
+			var unit = units_on_board[neighbor]
 			if unit.owner_id == attacker_id:
-				enemy_count_around += 1
-				if unit.data.is_assassin: 
-					print("MENANG! Assassin Kill.")
-					game_manager.trigger_game_over(attacker_id) # <--- PANGGIL INI
+				if unit.data.is_assassin:
+					print("MENANG! Assassin membunuh Leader.")
+					game_manager.trigger_game_over(attacker_id)
 					return
+				
+				# Archer tidak bisa capture kalau nempel
+				if not unit.data.is_archer:
+					threat_count += 1
 	
-	if enemy_count_around >= 2:
-		print("MENANG! Capture Condition.")
+	# B. Cek Archer Jauh (Jarak 2)
+	for dir in DIRECTIONS:
+		var snipe_pos = enemy_leader_pos + (dir * 2)
+		if units_on_board.has(snipe_pos):
+			var unit = units_on_board[snipe_pos]
+			if unit.owner_id == attacker_id and unit.data.is_archer:
+				print("Archer membidik Leader dari jauh!")
+				threat_count += 1
+
+	if threat_count >= 2:
+		print("MENANG! Leader musuh ter-Capture.")
 		game_manager.trigger_game_over(attacker_id)
 		return
 
-	# Cek SURROUND
+	# Cek Surround
 	var free_space = 0
+	var neighbors = get_neighbors(enemy_leader_pos)
 	for n in neighbors:
 		if valid_tiles.has(n) and not units_on_board.has(n):
 			free_space += 1
@@ -288,7 +337,9 @@ func check_win_condition(attacker_id: int):
 		print("MENANG! Surround Condition.")
 		game_manager.trigger_game_over(attacker_id)
 
-# --- RUMUS MATEMATIKA ---
+# ==========================================
+# 6. MATH & DRAWING
+# ==========================================
 func hex_to_pixel(hex: Vector2i) -> Vector2:
 	var x = hex_size * sqrt(3) * (hex.x + hex.y / 2.0)
 	var y = (hex_size * 3.0 / 2.0 * hex.y) * y_stretch
@@ -320,59 +371,23 @@ func get_neighbors(coords: Vector2i) -> Array:
 	return result
 
 func highlight_spawn_zones(player_id: int, active: bool):
-	# Nanti bisa tambah visual di sini jika mau
 	queue_redraw()
 
-# --- UPDATE FUNGSI GAMBAR (VISUAL) ---
 func _draw():
-	# 1. Visualisasi Debug Grid (Opsional - boleh dicomment)
-	# for hex in valid_tiles.keys():
-	# 	draw_circle(hex_to_pixel(hex), 5, Color.RED)
-	
-	# 2. LOGIKA PEMISAH (HIJAU VS MERAH)
+	# Mode SKILL (MERAH)
 	if is_skill_mode:
 		for target in valid_skill_targets:
 			var px = hex_to_pixel(target)
-			# Gambar Lingkaran Merah
 			draw_circle(px, 20, Color(1, 0.2, 0.2, 0.6))
-			
-			# Tambah Outline Putih biar kelihatan ini "Target"
 			draw_arc(px, 20, 0, TAU, 32, Color.WHITE, 2.0)
 			
+	# Mode MOVE (HIJAU)
 	else:
-		# --- MODE GERAK: GAMBAR HIJAU ---
 		for move in valid_moves_current:
 			var px = hex_to_pixel(move)
 			draw_circle(px, 15, Color(0, 1, 0, 0.5))
 		
-	# 3. Highlight Unit Terpilih (Kuning) - Selalu muncul
+	# Unit Terpilih (KUNING)
 	if valid_tiles.has(selected_unit_coord):
 		var px = hex_to_pixel(selected_unit_coord)
 		draw_circle(px, 20, Color(1, 1, 0, 0.3))
-		
-func execute_move(from_coord: Vector2i, to_coord: Vector2i):
-	if not units_on_board.has(from_coord): return
-	
-	var unit = units_on_board[from_coord]
-	
-	# 1. Update Data Dictionary
-	units_on_board.erase(from_coord)
-	units_on_board[to_coord] = unit
-	
-	# 2. Update Visual (Animasi)
-	var pixel_target = hex_to_pixel(to_coord)
-	var tween = create_tween()
-	tween.tween_property(unit, "position", pixel_target, 0.5) # Agak lambat biar kelihatan
-	
-	# 3. Update Data Unit
-	unit.grid_pos = to_coord
-	unit.mark_as_moved() 
-	
-	# 4. Cek Win Condition
-	check_win_condition(unit.owner_id)
-	
-	# 5. Seleksi ulang (hanya visual)
-	deselect_unit()
-	
-	# 6. Lapor ke GameManager bahwa aksi selesai (untuk trigger fase recruit atau next move)
-	$"../GameManager".on_action_performed()
