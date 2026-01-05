@@ -11,7 +11,8 @@ var selected_card_id = ""
 var pending_cub_spawn : bool = false 
 
 @onready var grid = $"../Board"
-@export var recruit_ui : Control 
+@export var recruit_ui : Control
+@export var in_game_menu : Control 
 @onready var info_label = $"../UILayer/InfoLabel"
 var ai_brain : AIBrain
 
@@ -247,14 +248,14 @@ func find_ai_spawn_pos() -> Vector2i:
 	return Vector2i(999, 999) # Penuh
 	
 func trigger_game_over(winner_id: int):
-	if current_state == State.GAME_OVER: return # Biar gak panggil double
+	if current_state == State.GAME_OVER: return
 	
 	current_state = State.GAME_OVER
 	print("!!! GAME OVER !!! Pemenang: Player ", winner_id)
 	
-	# Update UI Text
-	info_label.text = "GAME OVER!\nPEMENANG: PLAYER " + str(winner_id)
-	info_label.modulate = Color(1, 1, 0) # Warna Kuning Emas
+	# PANGGIL MENU GAME OVER
+	if in_game_menu:
+		in_game_menu.open_game_over_menu(winner_id)
 	
-	# Matikan UI Recruit kalau sedang terbuka
+	# Matikan UI Recruit
 	recruit_ui.close_market()

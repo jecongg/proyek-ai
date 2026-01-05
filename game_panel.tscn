@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://cm5ya8tsoxxkl"]
+[gd_scene load_steps=9 format=3 uid="uid://cm5ya8tsoxxkl"]
 
 [ext_resource type="Script" uid="uid://cabrkns58ax8y" path="res://game_panel.gd" id="1_d5y5s"]
 [ext_resource type="Texture2D" uid="uid://b2wdjbv73j8l" path="res://assets/images/background.png" id="2_d5y5s"]
@@ -6,6 +6,8 @@
 [ext_resource type="Script" uid="uid://yhgnre2adtie" path="res://GridManager.gd" id="4_jhmo0"]
 [ext_resource type="Script" uid="uid://dcn026wjv86gp" path="res://GameManager.gd" id="6_56u4o"]
 [ext_resource type="PackedScene" uid="uid://bmvvsotalgtj7" path="res://RecruitUI.tscn" id="7_56u4o"]
+[ext_resource type="Script" uid="uid://cllo30fhjvvc7" path="res://InGameMenu.gd" id="7_ctbsa"]
+[ext_resource type="StyleBox" uid="uid://c6ea38804ffyg" path="res://ButtonStyle.tres" id="8_ctbsa"]
 
 [node name="GamePanel" type="Node2D"]
 script = ExtResource("1_d5y5s")
@@ -30,9 +32,10 @@ script = ExtResource("4_jhmo0")
 y_stretch = 0.335
 grid_offset = Vector2(-2, 0)
 
-[node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("recruit_ui")]
+[node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("recruit_ui", "in_game_menu")]
 script = ExtResource("6_56u4o")
 recruit_ui = NodePath("../UILayer/RecruitUI")
+in_game_menu = NodePath("../UILayer/InGameMenu")
 
 [node name="UILayer" type="CanvasLayer" parent="."]
 
@@ -60,6 +63,7 @@ offset_right = 20.0
 offset_bottom = 23.0
 grow_horizontal = 2
 theme_override_font_sizes/font_size = 32
+horizontal_alignment = 1
 
 [node name="BtnSkill" type="Button" parent="UILayer"]
 visible = false
@@ -68,3 +72,126 @@ offset_top = 830.0
 offset_right = 1853.0
 offset_bottom = 918.0
 text = "USE SKILL"
+
+[node name="InGameMenu" type="Control" parent="UILayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("7_ctbsa")
+
+[node name="BtnPause" type="Button" parent="UILayer/InGameMenu"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -71.0
+offset_top = 19.0
+offset_right = -28.0
+offset_bottom = 72.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 32
+text = "||"
+
+[node name="Overlay" type="Control" parent="UILayer/InGameMenu"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BackgroundDim" type="ColorRect" parent="UILayer/InGameMenu/Overlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.5882353)
+
+[node name="MenuBox" type="PanelContainer" parent="UILayer/InGameMenu/Overlay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -52.0
+offset_top = -64.0
+offset_right = 52.0
+offset_bottom = 64.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UILayer/InGameMenu/Overlay/MenuBox"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="UILayer/InGameMenu/Overlay/MenuBox/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "PAUSED"
+horizontal_alignment = 1
+
+[node name="BtnResume" type="Button" parent="UILayer/InGameMenu/Overlay/MenuBox/VBoxContainer"]
+layout_mode = 2
+theme_override_styles/normal = ExtResource("8_ctbsa")
+theme_override_styles/pressed = ExtResource("8_ctbsa")
+theme_override_styles/hover = ExtResource("8_ctbsa")
+text = "RESUME"
+
+[node name="BtnRetry" type="Button" parent="UILayer/InGameMenu/Overlay/MenuBox/VBoxContainer"]
+layout_mode = 2
+theme_override_styles/normal = ExtResource("8_ctbsa")
+theme_override_styles/pressed = ExtResource("8_ctbsa")
+theme_override_styles/hover = ExtResource("8_ctbsa")
+text = "RETRY"
+
+[node name="BtnMenu" type="Button" parent="UILayer/InGameMenu/Overlay/MenuBox/VBoxContainer"]
+layout_mode = 2
+theme_override_styles/normal = ExtResource("8_ctbsa")
+theme_override_styles/pressed = ExtResource("8_ctbsa")
+theme_override_styles/hover = ExtResource("8_ctbsa")
+text = "MAIN MENU"
+
+[node name="ConfirmDialog" type="PanelContainer" parent="UILayer/InGameMenu/Overlay"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -53.5
+offset_top = -29.0
+offset_right = 53.5
+offset_bottom = 29.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UILayer/InGameMenu/Overlay/ConfirmDialog"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="UILayer/InGameMenu/Overlay/ConfirmDialog/VBoxContainer"]
+layout_mode = 2
+text = "Are you sure>"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UILayer/InGameMenu/Overlay/ConfirmDialog/VBoxContainer"]
+layout_mode = 2
+
+[node name="BtnYes" type="Button" parent="UILayer/InGameMenu/Overlay/ConfirmDialog/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_styles/normal = ExtResource("8_ctbsa")
+theme_override_styles/pressed = ExtResource("8_ctbsa")
+theme_override_styles/hover = ExtResource("8_ctbsa")
+text = "YES"
+
+[node name="BtnNo" type="Button" parent="UILayer/InGameMenu/Overlay/ConfirmDialog/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_styles/normal = ExtResource("8_ctbsa")
+theme_override_styles/pressed = ExtResource("8_ctbsa")
+theme_override_styles/hover = ExtResource("8_ctbsa")
+text = "NO"
