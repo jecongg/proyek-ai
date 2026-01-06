@@ -18,9 +18,17 @@ var ai_brain : AIBrain
 
 func _ready():
 	ai_brain = AIBrain.new(grid)
+	ai_brain.MAX_DEPTH = GlobalSettings.ai_depth 
 	add_child(ai_brain)
-	CardDB.initialize_deck()
-	recruit_ui.card_selected.connect(_on_card_picked_from_ui)
+	
+	# PENTING: Inisialisasi kartu di sini!
+	CardDB.initialize_deck() 
+	
+	# Hubungkan sinyal UI (pastikan path-nya benar)
+	if recruit_ui:
+		recruit_ui.card_selected.connect(_on_card_picked_from_ui)
+	
+	# Mulai game setelah frame siap
 	await get_tree().process_frame
 	start_game()
 

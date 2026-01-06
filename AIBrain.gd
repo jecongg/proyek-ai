@@ -14,8 +14,7 @@ class VirtualUnit:
 		data = _data
 		has_moved = _moved
 
-# --- KONFIGURASI AI ---
-const MAX_DEPTH = 3
+var MAX_DEPTH = 3
 const INF = 1000000.0
 
 # --- BOBOT NILAI (TUNING) ---
@@ -30,6 +29,12 @@ const PENALTY_EXPOSED_LEADER = 300.0
 const PENALTY_ARCHER_SNIPE = 200.0        
 
 var grid_manager : Node 
+
+var search_depth = 3 # Diatur via slider nanti
+
+# Tambahkan Bobot Baru
+const SCORE_DEFENSE_WALL = 100.0   # Bonus jika ada teman nempel Leader kita
+const SCORE_MOBILITY = 30.0        # Bonus petak kosong di sekitar Leader
 
 const DIRECTIONS = [
 	Vector2i(0, -1), Vector2i(1, -2), Vector2i(1, -1),
@@ -107,87 +112,54 @@ func _evaluate_board(board: Dictionary, ai_id: int) -> float:
 	var score = 0.0
 	var enemy_id = 1 if ai_id == 2 else 2
 	
-	var my_leader_pos = Vector2i(999, 999)
-	var enemy_leader_pos = Vector2i(999, 999)
+	var my_leader_pos = _find_leader(board, ai_id)
+	var en_leader_pos = _find_leader(board, enemy_id)
 	
-	var enemy_jailers = []
-	var enemy_pullers = [] 
-	var enemy_archers = []
-	var my_units = []
+	if my_leader_pos == Vector2i(999, 999): return -INF
+	if en_leader_pos == Vector2i(999, 999): return INF
+
+	# --- 1. EVALUASI LEADER KITA (DEFENSIF) ---
+	# Penalti jika ada musuh di sekitar kita (Hindari Capture)
+	var enemies_near_me = _count_adjacent_enemies(board, my_leader_pos, ai_id)
+	score -= enemies_near_me * 600.0 
 	
-	# 1. SCANNING AWAL
+	# Bonus jalan keluar (Hindari Surround - Hal 5)
+	var my_escape_routes = _count_free_spaces(board, my_leader_pos)
+	score += my_escape_routes * 150.0
+	if my_escape_routes <= 1: score -= 1000.0 # Sangat bahaya jika terjepit
+
+	# --- 2. EVALUASI LEADER MUSUH (AGRESIF) ---
+	# Bonus jika unit kita mengerumuni musuh
+	var allies_near_enemy = _count_adjacent_enemies(board, en_leader_pos, enemy_id)
+	score += allies_near_enemy * 500.0
+
+	# Strategi Unit Spesifik (Rulebook Hal 7)
 	for coord in board:
 		var unit = board[coord]
-		var is_mine = (unit.owner_id == ai_id)
-		
-		if unit.id == "LEADER":
-			if is_mine: my_leader_pos = coord
-			else: enemy_leader_pos = coord
-		
-		var val = unit.data.ai_value * SCORE_MATERIAL_MULTIPLIER
-		if is_mine: 
-			score += val
-			my_units.append(coord)
-		else: 
-			score -= val
-			if unit.data.is_jailer: enemy_jailers.append(coord)
-			if unit.id == "ILLUSIONIST" or unit.id == "CLAW_LAUNCHER": enemy_pullers.append(coord)
-			if unit.data.is_archer: enemy_archers.append(coord)
-
-	if my_leader_pos == Vector2i(999, 999): return -INF
-	if enemy_leader_pos == Vector2i(999, 999): return INF
-
-	# 2. EVALUASI UNIT KITA
-	for my_pos in my_units:
-		var unit = board[my_pos]
-		var is_leader = (unit.id == "LEADER")
-		
-		# A. CEK JAILER
-		if unit.data.has_active_skill:
-			for jailer_pos in enemy_jailers:
-				if _hex_distance(my_pos, jailer_pos) == 1:
-					score -= PENALTY_IN_JAILER_ZONE
-		
-		# B. CEK VISIBILITY
-		for enemy_pos in enemy_pullers:
-			if _is_visible_in_line(board, my_pos, enemy_pos):
-				var penalty = PENALTY_EXPOSED_TO_PULL
-				if is_leader: penalty = PENALTY_EXPOSED_LEADER 
-				score -= penalty
-
-		# C. POSISI STRATEGIS
-		var dist_to_enemy_leader = _hex_distance(my_pos, enemy_leader_pos)
-		
-		if is_leader:
-			score -= dist_to_enemy_leader * 2 
-		else:
-			score -= dist_to_enemy_leader * 1.5
-			if unit.data.is_assassin and dist_to_enemy_leader == 1:
-				score += SCORE_KILL_LEADER
-
-	# 3. EVALUASI LEADER
-	# A. Archer Musuh
-	for archer_pos in enemy_archers:
-		if _is_in_line(my_leader_pos, archer_pos) and _hex_distance(my_leader_pos, archer_pos) == 2:
-			score -= PENALTY_ARCHER_SNIPE
+		if unit.owner_id == ai_id:
+			var dist = _hex_distance(coord, en_leader_pos)
 			
-	# B. Capture
-	var enemies_near_me = _count_adjacent_enemies(board, my_leader_pos, ai_id)
-	if enemies_near_me >= 1: score -= SCORE_CAPTURE_THREAT
-	if enemies_near_me >= 2: score -= SCORE_KILL_LEADER 
-	
-	# C. Surround
-	var my_freedom = _count_free_spaces(board, my_leader_pos)
-	if my_freedom <= 1: score -= SCORE_SURROUND_PANIC
-	
-	# 4. AGRESIVITAS
-	var allies_near_enemy = _count_adjacent_enemies(board, enemy_leader_pos, enemy_id)
-	if allies_near_enemy >= 1: score += SCORE_CAPTURE_THREAT
-	if allies_near_enemy >= 2: score += SCORE_KILL_LEADER 
+			# ARCHER: Sangat bagus jika berjarak tepat 2 langkah dari Leader musuh
+			if unit.data.is_archer and dist == 2:
+				score += 1200.0
+				
+			# ASSASSIN: Sangat bagus jika nempel (Jarak 1)
+			if unit.data.is_assassin and dist == 1:
+				score += 2500.0
+				
+			# UNIT BIASA: Semakin dekat ke Raja musuh semakin baik
+			if unit.data.id != "LEADER":
+				score += (8 - dist) * 20.0
 
 	return score
 
 # --- HELPER FUNCTIONS ---
+func _find_leader(board: Dictionary, player_id: int) -> Vector2i:
+	for coord in board:
+		var unit = board[coord]
+		if unit.data.id == "LEADER" and unit.owner_id == player_id:
+			return coord
+	return Vector2i(999, 999) # Tidak ditemukan
 
 func _clone_board(original: Dictionary) -> Dictionary:
 	var new_board = {}
@@ -230,8 +202,8 @@ func _check_winner(board: Dictionary) -> int:
 	return 0
 
 func _hex_distance(a: Vector2i, b: Vector2i) -> int:
-	var vec = a - b
-	return (abs(vec.x) + abs(vec.y) + abs(vec.x + vec.y)) / 2
+	# Rumus jarak koordinat Axial/Cube Hexagon
+	return (abs(a.x - b.x) + abs(a.x + a.y - b.x - b.y) + abs(a.y - b.y)) / 2
 
 func _is_in_line(a: Vector2i, b: Vector2i) -> bool:
 	var diff = b - a

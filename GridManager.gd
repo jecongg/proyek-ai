@@ -75,7 +75,7 @@ func spawn_unit_by_id(id_string: String, coords: Vector2i, owner_id: int):
 	new_unit.setup(data, coords, owner_id)
 	
 	units_on_board[coords] = new_unit
-	if id_string != "LEADER":
+	if id_string != "LEADER" and id_string != "CUB":
 		CardDB.taken_units.append(id_string)
 
 # ==========================================
@@ -320,61 +320,50 @@ func check_win_condition(attacker_id: int):
 	var game_manager = $"../GameManager"
 	if game_manager.current_state == game_manager.State.GAME_OVER: return
 
-	var enemy_id = 1
-	if attacker_id == 1: enemy_id = 2
-	
-	var enemy_leader_pos = Vector2i.ZERO
-	var leader_found = false
+	var enemy_id = 1 if attacker_id == 2 else 2
+	var enemy_leader_pos = Vector2i(999, 999)
 	
 	for coord in units_on_board:
 		var unit = units_on_board[coord]
 		if unit.data.id == "LEADER" and unit.owner_id == enemy_id:
 			enemy_leader_pos = coord
-			leader_found = true
 			break
 	
-	if not leader_found: return 
-	
-	var threat_count = 0
-	
-	# A. Cek Tetangga (Jarak 1)
+	if enemy_leader_pos == Vector2i(999, 999): return 
+
+	# --- 1. CAPTURE CHECK (2 Musuh Bersebelahan) ---
+	var enemy_adj_count = 0
 	for dir in DIRECTIONS:
 		var neighbor = enemy_leader_pos + dir
 		if units_on_board.has(neighbor):
 			var unit = units_on_board[neighbor]
 			if unit.owner_id == attacker_id:
-				if unit.data.is_assassin:
-					print("MENANG! Assassin membunuh Leader.")
+				if unit.data.id == "ASSASSIN": # Assassin menang instan
 					game_manager.trigger_game_over(attacker_id)
 					return
-				
-				# Archer tidak bisa capture kalau nempel
-				if not unit.data.is_archer and unit.data.can_capture_leader:
-					threat_count += 1
-	
-	# B. Cek Archer Jauh (Jarak 2)
-	for dir in DIRECTIONS:
+				if not unit.data.is_archer: # Archer tidak bantu capture jika nempel
+					enemy_adj_count += 1
+		
+		# Cek Archer Jauh (Jarak 2)
 		var snipe_pos = enemy_leader_pos + (dir * 2)
 		if units_on_board.has(snipe_pos):
-			var unit = units_on_board[snipe_pos]
-			if unit.owner_id == attacker_id and unit.data.is_archer:
-				print("Archer membidik Leader dari jauh!")
-				threat_count += 1
+			var u = units_on_board[snipe_pos]
+			if u.owner_id == attacker_id and u.data.is_archer:
+				enemy_adj_count += 1
 
-	if threat_count >= 2:
-		print("MENANG! Leader musuh ter-Capture.")
+	if enemy_adj_count >= 2:
 		game_manager.trigger_game_over(attacker_id)
 		return
 
-	# Cek Surround
-	var free_space = 0
-	var neighbors = get_neighbors(enemy_leader_pos)
-	for n in neighbors:
-		if valid_tiles.has(n) and not units_on_board.has(n):
-			free_space += 1
+	# --- 2. SURROUND CHECK (Tidak ada petak kosong) ---
+	var is_surrounded = true
+	for dir in DIRECTIONS:
+		var neighbor = enemy_leader_pos + dir
+		if valid_tiles.has(neighbor) and not units_on_board.has(neighbor):
+			is_surrounded = false # Masih ada lubang kosong
+			break
 	
-	if free_space == 0:
-		print("MENANG! Surround Condition.")
+	if is_surrounded:
 		game_manager.trigger_game_over(attacker_id)
 
 # ==========================================
