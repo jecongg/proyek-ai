@@ -41,7 +41,7 @@ func start_turn(player_id):
 	current_turn = player_id
 	current_state = State.ACTION_PHASE
 	
-	info_label.text = "GILIRAN PLAYER " + str(current_turn)
+	info_label.text = "TURN PLAYER " + str(current_turn)
 	
 	# Reset unit state (warna)
 	for unit in grid.units_on_board.values():

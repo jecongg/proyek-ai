@@ -48,12 +48,23 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = -56.0
+offset_top = 32.0
+offset_right = -56.0
+offset_bottom = 32.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="MenuContainer" type="VBoxContainer" parent="CenterContainer"]
 layout_mode = 2
 theme_override_constants/separation = 15
+
+[node name="GameTitle" type="Label" parent="CenterContainer/MenuContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.3148014, 0.21191773, 0.018076874, 1)
+theme_override_font_sizes/font_size = 100
+text = "Leaders Game"
 
 [node name="PlayButton" type="Button" parent="CenterContainer/MenuContainer"]
 layout_mode = 2
@@ -81,5 +92,19 @@ theme_override_styles/pressed = ExtResource("5_iwfq2")
 theme_override_styles/hover = SubResource("StyleBoxFlat_h7a2f")
 text = "Exit"
 
+[node name="DepthLabel" type="Label" parent="CenterContainer/MenuContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "AI Difficulty: 3"
+
+[node name="DepthSlider" type="HSlider" parent="CenterContainer/MenuContainer"]
+custom_minimum_size = Vector2(600, 100)
+layout_mode = 2
+min_value = 1.0
+max_value = 5.0
+value = 3.0
+
+[connection signal="ready" from="." to="." method="_ready"]
 [connection signal="pressed" from="CenterContainer/MenuContainer/PlayButton" to="." method="_on_play_button_pressed"]
 [connection signal="pressed" from="CenterContainer/MenuContainer/ExitButton" to="." method="_on_exit_button_pressed"]
+[connection signal="value_changed" from="CenterContainer/MenuContainer/DepthSlider" to="." method="_on_depth_slider_value_changed"]
