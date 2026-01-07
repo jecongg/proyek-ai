@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://c241j15udsgpl"
+path="res://.godot/imported/War Epic Music Collection! Prepare for Battle Military Orchestral Megamix!.mp3-f165f51213ec9d34deaad9e7e2cfacdf.mp3str"
+
+[deps]
+
+source_file="res://assets/audio/War Epic Music Collection! Prepare for Battle Military Orchestral Megamix!.mp3"
+dest_files=["res://.godot/imported/War Epic Music Collection! Prepare for Battle Military Orchestral Megamix!.mp3-f165f51213ec9d34deaad9e7e2cfacdf.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

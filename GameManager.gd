@@ -17,6 +17,7 @@ var pending_cub_spawn : bool = false
 var ai_brain : AIBrain
 
 func _ready():
+	SoundManager.play_music("game") 
 	ai_brain = AIBrain.new(grid)
 	ai_brain.MAX_DEPTH = GlobalSettings.ai_depth 
 	add_child(ai_brain)

@@ -20,6 +20,7 @@ func _ready():
 	
 	# 2. Update Label saat pertama kali dibuka
 	update_depth_text(GlobalSettings.ai_depth)
+	SoundManager.play_music("menu")
 
 # --- FUNGSI SIGNAL SLIDER ---
 func _on_depth_slider_value_changed(value: float) -> void:
