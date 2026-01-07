@@ -176,18 +176,39 @@ func _get_all_possible_moves(board: Dictionary, player_id: int) -> Array:
 	for coord in board:
 		var unit = board[coord]
 		if unit.owner_id == player_id and not unit.has_moved:
+			
+			# 1. TAMBAHKAN GERAKAN STANDAR
 			var raw_moves = unit.data.get_valid_moves(board, coord, unit.owner_id)
 			for target in raw_moves:
 				if grid_manager.valid_tiles.has(target) and not board.has(target):
-					moves.append({ "from": coord, "to": target })
+					moves.append({ "from": coord, "to": target, "is_skill": false })
+			
+			# 2. TAMBAHKAN PENGGUNAAN SKILL (Agar AI bisa melompat, menarik, dll)
+			if unit.data.has_active_skill:
+				# Cek apakah terkena Jailer (Silence)
+				if not grid_manager.is_unit_silenced(coord, player_id):
+					var skill_targets = unit.data.get_skill_targets(board, coord, player_id)
+					for s_target in skill_targets:
+						# Masukkan target skill ke dalam pertimbangan AI
+						moves.append({ "from": coord, "to": s_target, "is_skill": true })
 	return moves
 
 func _apply_move(board: Dictionary, move: Dictionary) -> Dictionary:
 	var new_board = _clone_board(board)
-	var unit = new_board[move["from"]]
-	new_board.erase(move["from"])
-	new_board[move["to"]] = unit
-	unit.has_moved = true
+	
+	if move.has("is_skill") and move["is_skill"]:
+		# AI mensimulasikan penggunaan Skill (Sederhana: Unit pindah ke target)
+		# Untuk skill kompleks seperti Swap atau Push, ini perlu diperluas.
+		var unit = new_board[move["from"]]
+		new_board.erase(move["from"])
+		new_board[move["to"]] = unit
+	else:
+		# Gerakan jalan biasa
+		var unit = new_board[move["from"]]
+		new_board.erase(move["from"])
+		new_board[move["to"]] = unit
+		
+	new_board[move["to"]].has_moved = true
 	return new_board
 
 func _check_winner(board: Dictionary) -> int:
