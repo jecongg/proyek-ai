@@ -62,21 +62,15 @@ func get_skill_targets(board_state: Dictionary, current_pos: Vector2i, my_owner_
 # --- 2. EKSEKUSI SKILL ---
 func resolve_skill(board_state: Dictionary, current_pos: Vector2i, target_pos: Vector2i, grid_ref) -> bool:
 	
-	# Kita tahu 'target_pos' adalah petak kosong yang diklik.
-	# Kita harus mencari: "Siapa musuh di sebelah 'target_pos' yang didorong ke situ?"
-	
+	# 1. Cari tahu siapa musuh di sebelah 'target_pos' yang valid dilihat Manipulator
 	var enemy_to_move = Vector2i(999, 999)
 	var found = false
 	
-	# Cek semua tetangga dari titik yang diklik
 	for dir in DIRECTIONS:
 		var potential_enemy_pos = target_pos + dir
 		
 		if board_state.has(potential_enemy_pos):
-			var unit = board_state[potential_enemy_pos]
-			
-			# Validasi ulang: Apakah unit ini benar-benar bisa dilihat Manipulator?
-			# (Untuk menghindari kasus ada 2 musuh dekat situ, tapi yang satu ketutupan tembok/teman)
+			# Validasi ulang visibilitas
 			if is_visible_and_non_adjacent(board_state, current_pos, potential_enemy_pos):
 				enemy_to_move = potential_enemy_pos
 				found = true
@@ -84,12 +78,18 @@ func resolve_skill(board_state: Dictionary, current_pos: Vector2i, target_pos: V
 	
 	if not found: return false
 	
-	print("MANIPULATOR: Menggerakkan musuh dari ", enemy_to_move, " ke ", target_pos)
-	
-	# Pindahkan Musuh
-	grid_ref.force_move_unit(enemy_to_move, target_pos)
-	
-	return true
+	# --- PERUBAHAN DI SINI ---
+	# 2. Eksekusi perpindahan dan cek apakah berhasil (tidak diblokir Protector)
+	var success = grid_ref.force_move_unit(enemy_to_move, target_pos)
+
+	if not success:
+		# Jika force_move_unit mengembalikan 'false', berarti target dilindungi
+		print("MANIPULATOR: Gagal menggeser musuh karena dilindungi Protector!")
+		return false # Skill dianggap gagal/tidak terpakai
+	else:
+		# Jika 'true', berarti musuh berhasil digeser
+		print("MANIPULATOR: Berhasil menggerakkan musuh dari ", enemy_to_move, " ke ", target_pos)
+		return true # Skill sukses
 
 # --- HELPER: Cek Visibility & Jarak ---
 func is_visible_and_non_adjacent(board_state: Dictionary, my_pos: Vector2i, target_pos: Vector2i) -> bool:

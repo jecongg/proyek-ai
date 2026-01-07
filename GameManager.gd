@@ -93,7 +93,8 @@ func skip_action_phase():
 	start_recruit_phase()
 
 func start_recruit_phase():
-	if count_units(current_turn) >= 5:
+	if count_total_cards(current_turn) >= 5:
+		print("Sudah punya 5 kartu (Leader + 4 Ally). Lewati rekrut.")
 		end_turn()
 		return
 
@@ -180,7 +181,8 @@ func finish_recruit_step():
 	selected_card_id = ""
 	
 	if recruits_remaining > 0:
-		if count_units(current_turn) >= 5:
+		# UBAH DI SINI JUGA: Gunakan count_total_cards
+		if count_total_cards(current_turn) >= 5:
 			end_turn()
 		else:
 			print("Masih ada jatah rekrut!")
@@ -242,12 +244,14 @@ func end_turn():
 	if current_turn == 1: next_p = 2
 	start_turn(next_p)
 
-func count_units(player_id) -> int:
-	var count = 0
+func count_total_cards(player_id) -> int:
+	var total = 0
 	for unit in grid.units_on_board.values():
 		if unit.owner_id == player_id:
-			count += 1
-	return count
+			# Cub tidak dihitung sebagai kartu karena dia "bonus" dari Hermit
+			if unit.data.id != "CUB":
+				total += 1
+	return total
 
 func find_ai_spawn_pos() -> Vector2i:
 	for zone in grid.p2_spawn_zones:

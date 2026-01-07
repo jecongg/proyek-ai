@@ -20,72 +20,59 @@ func get_skill_targets(board_state: Dictionary, current_pos: Vector2i, my_owner_
 	
 	for dir in directions:
 		var check_pos = current_pos + dir
-		var enemy_pos = Vector2i(999, 999)
-		var found_enemy = false
+		var target_unit_pos = Vector2i(999, 999)
+		var found_character = false
 		
-		# Raycast: Cari musuh dulu di garis lurus
+		# Raycast: Cari KARAKTER (Teman/Musuh) pertama di garis lurus
 		for i in range(10):
 			if board_state.has(check_pos):
-				var unit = board_state[check_pos]
-				if unit.owner_id != my_owner_id:
-					found_enemy = true
-					enemy_pos = check_pos
-				break # Nabrak sesuatu (teman/musuh) berhenti
+				found_character = true
+				target_unit_pos = check_pos
+				break # Terhalang karakter, berhenti (Sesuai definisi Visible Hal 6)
 			check_pos += dir
 			
-		if found_enemy:
-			# KITA PUNYA 2 OPSI: TARIK atau SAMPERIN
-			
-			# Opsi A: TARIK (Musuh ditarik ke depan muka kita)
+		if found_character:
+			# Opsi A: TARIK (Karakter ditarik ke depan muka kita)
 			var pull_dest = current_pos + dir
-			# Syarat: 
-			# 1. Petak depan kita harus kosong
-			# 2. Petak depan kita BUKAN posisi musuh itu sendiri (artinya musuh ada jarak > 1)
-			if not board_state.has(pull_dest) and pull_dest != enemy_pos:
+			if not board_state.has(pull_dest) and pull_dest != target_unit_pos:
 				targets.append(pull_dest)
 				
-			# Opsi B: SAMPERIN (Kita pindah ke depan muka musuh)
-			var dash_dest = enemy_pos - dir
-			# Syarat:
-			# 1. Petak depan musuh harus kosong
-			# 2. Petak depan musuh BUKAN posisi kita saat ini
+			# Opsi B: SAMPERIN (Kita pindah ke depan muka karakter itu)
+			var dash_dest = target_unit_pos - dir
 			if not board_state.has(dash_dest) and dash_dest != current_pos:
 				targets.append(dash_dest)
 				
 	return targets
 
-# 2. EKSEKUSI SKILL (Berdasarkan Tile yang diklik)
 func resolve_skill(board_state: Dictionary, current_pos: Vector2i, target_pos: Vector2i, grid_ref) -> bool:
-	
-	# Cari arah dari Kita ke Target (atau sebaliknya)
-	# Karena target_pos ada di garis lurus, kita bisa hitung arahnya
-	var dir = get_direction_to_target(current_pos, target_pos)
-	if dir == Vector2i.ZERO: 
-		# Kasus Dash: target jauh, arahnya adalah (target - current) dinormalisasi
-		dir = get_long_direction(current_pos, target_pos)
-	
+	var dir = get_long_direction(current_pos, target_pos)
 	if dir == Vector2i.ZERO: return false
 
-	# ANALISA: APAKAH INI TARIK ATAU DASH?
-	
-	# Cek 1: Apakah target ada di SEBELAH KITA? -> Berarti TARIK
+	# ANALISA: TARIK atau DASH?
+	# Jika target_pos bersebelahan dengan kita, berarti TARIK
 	if target_pos == (current_pos + dir):
-		# Cari musuh yang ada di garis lurus sana
-		var enemy_pos = find_enemy_in_direction(board_state, current_pos, dir)
-		if enemy_pos != Vector2i(999, 999):
-			print("CLAW: Menarik musuh dari ", enemy_pos, " ke ", target_pos)
-			grid_ref.force_move_unit(enemy_pos, target_pos)
-			return true
-			
-	# Cek 2: Apakah target JAUH? -> Berarti DASH (Samperin)
+		var char_pos = find_character_in_direction(board_state, current_pos, dir)
+		if char_pos != Vector2i(999, 999):
+			# CEK PROTECTOR: Gunakan return value dari force_move_unit
+			var success = grid_ref.force_move_unit(char_pos, target_pos)
+			if not success:
+				print("CLAW: Gagal menarik! Target dilindungi Protector.")
+			return success
 	else:
-		print("CLAW: Dash menghampiri musuh di ", target_pos)
+		# Berarti DASH (Launcher yang pindah)
+		print("CLAW: Dash menghampiri karakter.")
 		grid_ref.force_move_unit(current_pos, target_pos)
 		return true
 		
 	return false
 
-# --- HELPER FUNCTIONS ---
+# Helper untuk cari karakter (siapa saja) di arah tertentu
+func find_character_in_direction(board: Dictionary, start: Vector2i, dir: Vector2i) -> Vector2i:
+	var check = start + dir
+	for k in range(10):
+		if board.has(check): return check 
+		check += dir
+	return Vector2i(999, 999)
 
 # Cari arah tetangga (jarak 1)
 func get_direction_to_target(from: Vector2i, to: Vector2i) -> Vector2i:

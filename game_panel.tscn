@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://cm5ya8tsoxxkl"]
+[gd_scene load_steps=10 format=3 uid="uid://cm5ya8tsoxxkl"]
 
 [ext_resource type="Script" uid="uid://cabrkns58ax8y" path="res://game_panel.gd" id="1_d5y5s"]
 [ext_resource type="Texture2D" uid="uid://b2wdjbv73j8l" path="res://assets/images/background.png" id="2_d5y5s"]
@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://bmvvsotalgtj7" path="res://RecruitUI.tscn" id="7_56u4o"]
 [ext_resource type="Script" uid="uid://cllo30fhjvvc7" path="res://InGameMenu.gd" id="7_ctbsa"]
 [ext_resource type="StyleBox" uid="uid://c6ea38804ffyg" path="res://ButtonStyle.tres" id="8_ctbsa"]
+[ext_resource type="Script" uid="uid://lqeuwnkp4ai" path="res://TooltipUI.gd" id="9_ohunm"]
 
 [node name="GamePanel" type="Node2D"]
 script = ExtResource("1_d5y5s")
@@ -24,13 +25,14 @@ grow_vertical = 2
 texture = ExtResource("2_d5y5s")
 expand_mode = 1
 
-[node name="Board" type="Sprite2D" parent="."]
+[node name="Board" type="Sprite2D" parent="." node_paths=PackedStringArray("tooltip_ui")]
 position = Vector2(794, 545.8406)
 scale = Vector2(0.50346416, 0.50346416)
 texture = ExtResource("3_3m864")
 script = ExtResource("4_jhmo0")
 y_stretch = 0.335
 grid_offset = Vector2(-2, 0)
+tooltip_ui = NodePath("../ToolTipLayer/InfoPanel")
 
 [node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("recruit_ui", "in_game_menu")]
 script = ExtResource("6_56u4o")
@@ -215,3 +217,31 @@ theme_override_styles/normal = ExtResource("8_ctbsa")
 theme_override_styles/pressed = ExtResource("8_ctbsa")
 theme_override_styles/hover = ExtResource("8_ctbsa")
 text = "NO"
+
+[node name="ToolTipLayer" type="CanvasLayer" parent="."]
+
+[node name="InfoPanel" type="PanelContainer" parent="ToolTipLayer"]
+custom_minimum_size = Vector2(450, 200)
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -25.0
+offset_bottom = 25.0
+grow_horizontal = 0
+grow_vertical = 2
+script = ExtResource("9_ohunm")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ToolTipLayer/InfoPanel"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="ToolTipLayer/InfoPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+
+[node name="DescLabel" type="Label" parent="ToolTipLayer/InfoPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 25
+autowrap_mode = 2

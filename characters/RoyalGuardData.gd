@@ -1,6 +1,12 @@
 extends CharacterData
 class_name RoyalGuardData
 
+# Tambahkan baris ini di paling atas agar bisa diakses semua fungsi di bawahnya
+const DIRECTIONS = [
+	Vector2i(0, -1), Vector2i(1, -2), Vector2i(1, -1),
+	Vector2i(0, 1), Vector2i(-1, 2), Vector2i(-1, 1)
+]
+
 func _init():
 	id = "ROYAL_GUARD"
 	display_name = "Royal Guard"
@@ -9,34 +15,20 @@ func _init():
 	card_x = 4
 	card_y = 0
 	ai_value = 7
-	
-	# PENTING: Nyalakan Skill Aktif
 	has_active_skill = true
 
-# --- 1. GERAKAN STANDAR (Tanpa Skill) ---
-# Hanya bisa jalan kaki 1 langkah
+# --- 1. GERAKAN STANDAR ---
 func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
 	var moves = []
-	const directions = [
-		Vector2i(0, -1), Vector2i(1, -2), Vector2i(1, -1),
-		Vector2i(0, 1), Vector2i(-1, 2), Vector2i(-1, 1)
-	]
-	
-	for dir in directions:
+	for dir in DIRECTIONS:
 		var target = current_pos + dir
 		if not board_state.has(target): 
 			moves.append(target)
 	return moves
 
-# --- 2. TARGET SKILL (Teleport ke Leader + 1 Langkah) ---
+# --- 2. TARGET SKILL ---
 func get_skill_targets(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
 	var targets = []
-	const directions = [
-		Vector2i(0, -1), Vector2i(1, -2), Vector2i(1, -1),
-		Vector2i(0, 1), Vector2i(-1, 2), Vector2i(-1, 1)
-	]
-	
-	# A. Cari Leader Kita
 	var leader_pos = Vector2i(999, 999)
 	var found = false
 	
@@ -47,32 +39,19 @@ func get_skill_targets(board_state: Dictionary, current_pos: Vector2i, my_owner_
 			found = true
 			break
 	
-	if not found: return [] # Gak ada leader, gak bisa skill
+	if not found: return [] 
 	
-	# B. Hitung Area Valid (Zone 1 & Zone 2)
-	
-	# ZONE 1: Petak persis di sebelah Leader
 	var zone_1_tiles = []
-	
-	for dir in directions:
+	for dir in DIRECTIONS:
 		var pos = leader_pos + dir
-		# Syarat: Harus kosong
 		if not board_state.has(pos):
 			zone_1_tiles.append(pos)
-			
-			# Masukkan ke targets (Opsi jika player cuma mau gerak sampai sini)
 			if not targets.has(pos):
 				targets.append(pos)
 	
-	# ZONE 2: Petak di sebelah Zone 1 (Langkah Tambahan)
 	for start_node in zone_1_tiles:
-		for dir in directions:
+		for dir in DIRECTIONS:
 			var pos_2 = start_node + dir
-			
-			# Syarat:
-			# 1. Harus kosong
-			# 2. Tidak boleh balik ke posisi Leader (jelas, karena ada isinya)
-			# 3. Tidak boleh posisi Royal Guard saat ini (diam di tempat)
 			if not board_state.has(pos_2) and pos_2 != current_pos:
 				if not targets.has(pos_2):
 					targets.append(pos_2)
@@ -81,12 +60,37 @@ func get_skill_targets(board_state: Dictionary, current_pos: Vector2i, my_owner_
 
 # --- 3. EKSEKUSI SKILL ---
 func resolve_skill(board_state: Dictionary, current_pos: Vector2i, target_pos: Vector2i, grid_ref) -> bool:
-	# Cek sederhana apakah target kosong
 	if board_state.has(target_pos): return false
 	
-	print("ROYAL GUARD: Melindungi Leader di ", target_pos)
+	var my_owner_id = board_state[current_pos].owner_id
+	var leader_pos = Vector2i(999,999)
+	for coord in board_state:
+		if board_state[coord].data.id == "LEADER" and board_state[coord].owner_id == my_owner_id:
+			leader_pos = coord
+			break
 	
-	# Pindahkan unit (Teleport)
-	grid_ref.force_move_unit(current_pos, target_pos)
+	var is_adj_to_leader = is_neighbor(target_pos, leader_pos)
 	
+	if is_adj_to_leader:
+		grid_ref.force_move_unit(current_pos, target_pos)
+	else:
+		var stepping_stone = Vector2i(999,999)
+		for dir in DIRECTIONS:
+			var potential = leader_pos + dir
+			if is_neighbor(potential, target_pos) and not board_state.has(potential):
+				stepping_stone = potential
+				break
+		
+		if stepping_stone != Vector2i(999,999):
+			grid_ref.force_move_unit(current_pos, stepping_stone)
+			# Tunggu sebentar agar mata pemain bisa mengikuti gerakan
+			await grid_ref.get_tree().create_timer(0.3).timeout
+			grid_ref.force_move_unit(stepping_stone, target_pos)
+		else:
+			grid_ref.force_move_unit(current_pos, target_pos)
+			
 	return true
+
+func is_neighbor(a: Vector2i, b: Vector2i) -> bool:
+	var diff = b - a
+	return diff in DIRECTIONS

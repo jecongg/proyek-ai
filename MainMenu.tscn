@@ -101,7 +101,7 @@ text = "AI Difficulty: 3"
 custom_minimum_size = Vector2(600, 100)
 layout_mode = 2
 min_value = 1.0
-max_value = 5.0
+max_value = 10.0
 value = 3.0
 
 [connection signal="ready" from="." to="." method="_ready"]

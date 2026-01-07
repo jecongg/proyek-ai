@@ -65,18 +65,12 @@ func resolve_skill(board_state: Dictionary, current_pos: Vector2i, target_pos: V
 		Vector2i(0, 1), Vector2i(-1, 2), Vector2i(-1, 1)
 	]
 	
-	# Kita harus mencari TAHU siapa musuh yang didorong.
-	# Musuh adalah unit yang:
-	# 1. Tetangga Bruiser (current_pos)
-	# 2. Tetangga Target (target_pos)
-	
 	var enemy_pos = Vector2i(999, 999)
 	var found = false
 	
 	for dir in directions:
 		var check = current_pos + dir
 		if board_state.has(check):
-			# Cek apakah unit ini juga tetangga dari target_pos?
 			if is_neighbor(check, target_pos):
 				enemy_pos = check
 				found = true
@@ -84,17 +78,19 @@ func resolve_skill(board_state: Dictionary, current_pos: Vector2i, target_pos: V
 	
 	if not found: return false
 	
-	print("BRUISER: Mendorong musuh di ", enemy_pos, " ke ", target_pos)
+	# --- PERUBAHAN DI SINI ---
+	# Coba dorong musuh dulu
+	var push_success = grid_ref.force_move_unit(enemy_pos, target_pos)
 	
-	# URUTAN GERAKAN:
-	# 1. Pindahkan Musuh dulu (ke target_pos)
-	grid_ref.force_move_unit(enemy_pos, target_pos)
-	
-	# 2. Bruiser maju mengisi tempat kosong bekas musuh (enemy_pos)
-	# Beri sedikit delay visual jika memungkinkan, tapi langsung juga oke
-	grid_ref.force_move_unit(current_pos, enemy_pos)
-	
-	return true
+	if push_success:
+		# Hanya jika musuh pindah, Bruiser maju mengisi tempatnya
+		print("BRUISER: Berhasil mendorong musuh, sekarang maju.")
+		grid_ref.force_move_unit(current_pos, enemy_pos)
+		return true
+	else:
+		# Jika gagal (kena Protector), Bruiser tetap diam di tempat
+		print("BRUISER: Gagal mendorong karena target dilindungi!")
+		return false
 
 # --- HELPER: Cek apakah A dan B tetanggaan ---
 func is_neighbor(a: Vector2i, b: Vector2i) -> bool:

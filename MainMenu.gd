@@ -29,12 +29,14 @@ func _on_depth_slider_value_changed(value: float) -> void:
 	# Update tulisan di Label agar pemain tahu levelnya
 	update_depth_text(value)
 
-# --- HELPER: Biar Teksnya Bagus ---
 func update_depth_text(val: float):
 	var level_name = ""
-	if val <= 2: level_name = " (Mudah)"
-	elif val == 3: level_name = " (Normal)"
-	elif val == 4: level_name = " (Sulit)"
-	else: level_name = " (Expert)"
+	var v = int(val)
 	
-	$CenterContainer/MenuContainer/DepthLabel.text = "AI Difficulty: " + str(int(val)) + level_name
+	if v <= 2: level_name = " (Easy)"
+	elif v <= 4: level_name = " (Normal)"
+	elif v <= 6: level_name = " (Hard)"
+	elif v <= 8: level_name = " (Expert)"
+	else: level_name = " (MASTER)" # Untuk depth 9-10
+	
+	$CenterContainer/MenuContainer/DepthLabel.text = "AI Difficulty: " + str(v) + level_name
