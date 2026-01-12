@@ -186,13 +186,22 @@ func move_selected_unit_to(target_coord: Vector2i):
 	execute_move(selected_unit_coord, target_coord)
 
 func execute_skill_on(target_coord: Vector2i):
+	if not units_on_board.has(selected_unit_coord):
+		print("Peringatan: Unit sudah berpindah tempat, membatalkan akses petak lama.")
+		deselect_unit()
+		return
+
 	var unit = units_on_board[selected_unit_coord]
-	var success = unit.data.resolve_skill(units_on_board, selected_unit_coord, target_coord, self)
+
+	var origin_pos = selected_unit_coord 
+	var success = await unit.data.resolve_skill(units_on_board, origin_pos, target_coord, self)
 	
 	if success:
 		unit.mark_as_moved() 
 		deselect_unit()
 		$"../GameManager".on_action_performed()
+	else:
+		deselect_unit()
 
 func execute_move(from_coord: Vector2i, to_coord: Vector2i):
 	if not units_on_board.has(from_coord): return

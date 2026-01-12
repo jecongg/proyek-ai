@@ -28,8 +28,8 @@ func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id
 # --- TARGET SKILL (Cari Semua Petak Aman) ---
 func get_skill_targets(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
 	var targets = []
-	var scan_range_q = range(-4, 5) 
-	var scan_range_r = range(-7, 8) 
+	var scan_range_q = range(-6, 7) 
+	var scan_range_r = range(-6, 7) 
 	
 	for q in scan_range_q:
 		for r in scan_range_r:

@@ -172,18 +172,21 @@ func _get_all_possible_moves(board: Dictionary, player_id: int) -> Array:
 	var moves = []
 	for coord in board:
 		var unit = board[coord]
+		
 		if unit.owner_id == player_id and not unit.has_moved:
 			
 			var raw_moves = unit.data.get_valid_moves(board, coord, unit.owner_id)
 			for target in raw_moves:
 				if grid_manager.valid_tiles.has(target) and not board.has(target):
 					moves.append({ "from": coord, "to": target, "is_skill": false })
-			
+
 			if unit.data.has_active_skill:
 				if not grid_manager.is_unit_silenced(coord, player_id):
 					var skill_targets = unit.data.get_skill_targets(board, coord, player_id)
 					for s_target in skill_targets:
-						moves.append({ "from": coord, "to": s_target, "is_skill": true })
+						if grid_manager.valid_tiles.has(s_target):
+							moves.append({ "from": coord, "to": s_target, "is_skill": true })
+							
 	return moves
 
 func _apply_move(board: Dictionary, move: Dictionary) -> Dictionary:

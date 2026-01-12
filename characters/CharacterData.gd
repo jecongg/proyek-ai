@@ -37,3 +37,4 @@ func get_skill_targets(board_state: Dictionary, current_pos: Vector2i, my_owner_
 	
 func resolve_skill(board_state: Dictionary, current_pos: Vector2i, target_pos: Vector2i, grid_manager_ref) -> bool:
 	return false
+	
