@@ -54,10 +54,7 @@ static func pick_card_from_market(index: int) -> String:
 		market_cards.remove_at(index)
 	return picked_id
 
-# FUNGSI PERBAIKAN: Jangan tandai "Taken" di sini jika hanya untuk preview UI
 static func get_unit_data(unit_id: String) -> CharacterData:
-	# JANGAN cek 'taken_units' di sini agar UI bisa menampilkan icon.
-	# Pengecekan 'taken_units' hanya dilakukan saat unit benar-benar diletakkan di papan.
 	if library.has(unit_id):
 		return library[unit_id].new()
 	return null

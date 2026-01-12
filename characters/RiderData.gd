@@ -11,10 +11,9 @@ func _init():
 	card_y = 0
 	ai_value = 8
 	
-	# PENTING: Aktifkan flag Skill Aktif sesuai Rulebook Hal 6
 	has_active_skill = true
 
-# --- 1. GERAKAN STANDAR (1 Langkah) ---
+# --- GERAKAN STANDAR (1 Langkah) ---
 func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
 	var moves = []
 	const directions = [
@@ -28,7 +27,7 @@ func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id
 			moves.append(target)
 	return moves
 
-# --- 2. TARGET SKILL (2 Langkah Lurus) ---
+# --- TARGET SKILL (2 Langkah Lurus) ---
 func get_skill_targets(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
 	var targets = []
 	const directions = [
@@ -40,15 +39,13 @@ func get_skill_targets(board_state: Dictionary, current_pos: Vector2i, my_owner_
 		var pos1 = current_pos + dir
 		var pos2 = pos1 + dir
 		
-		# Syarat Rulebook: Harus melewati petak kosong (Lurus)
-		# Berbeda dengan Acrobat yang melompati orang, Rider butuh jalan yang bersih
 		if not board_state.has(pos1): 
 			if not board_state.has(pos2):
 				targets.append(pos2)
 				
 	return targets
 
-# --- 3. EKSEKUSI SKILL ---
+# --- EKSEKUSI SKILL ---
 func resolve_skill(board_state: Dictionary, current_pos: Vector2i, target_pos: Vector2i, grid_ref) -> bool:
 	if board_state.has(target_pos): return false
 	

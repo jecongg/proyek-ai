@@ -23,21 +23,18 @@ func get_skill_targets(board_state: Dictionary, current_pos: Vector2i, my_owner_
 		var target_unit_pos = Vector2i(999, 999)
 		var found_character = false
 		
-		# Raycast: Cari KARAKTER (Teman/Musuh) pertama di garis lurus
 		for i in range(10):
 			if board_state.has(check_pos):
 				found_character = true
 				target_unit_pos = check_pos
-				break # Terhalang karakter, berhenti (Sesuai definisi Visible Hal 6)
+				break 
 			check_pos += dir
 			
 		if found_character:
-			# Opsi A: TARIK (Karakter ditarik ke depan muka kita)
 			var pull_dest = current_pos + dir
 			if not board_state.has(pull_dest) and pull_dest != target_unit_pos:
 				targets.append(pull_dest)
 				
-			# Opsi B: SAMPERIN (Kita pindah ke depan muka karakter itu)
 			var dash_dest = target_unit_pos - dir
 			if not board_state.has(dash_dest) and dash_dest != current_pos:
 				targets.append(dash_dest)
@@ -49,17 +46,14 @@ func resolve_skill(board_state: Dictionary, current_pos: Vector2i, target_pos: V
 	if dir == Vector2i.ZERO: return false
 
 	# ANALISA: TARIK atau DASH?
-	# Jika target_pos bersebelahan dengan kita, berarti TARIK
 	if target_pos == (current_pos + dir):
 		var char_pos = find_character_in_direction(board_state, current_pos, dir)
 		if char_pos != Vector2i(999, 999):
-			# CEK PROTECTOR: Gunakan return value dari force_move_unit
 			var success = grid_ref.force_move_unit(char_pos, target_pos)
 			if not success:
 				print("CLAW: Gagal menarik! Target dilindungi Protector.")
 			return success
 	else:
-		# Berarti DASH (Launcher yang pindah)
 		print("CLAW: Dash menghampiri karakter.")
 		grid_ref.force_move_unit(current_pos, target_pos)
 		return true
@@ -101,6 +95,6 @@ func get_long_direction(from: Vector2i, to: Vector2i) -> Vector2i:
 func find_enemy_in_direction(board: Dictionary, start: Vector2i, dir: Vector2i) -> Vector2i:
 	var check = start + dir
 	for k in range(10):
-		if board.has(check): return check # Ketemu unit pertama
+		if board.has(check): return check
 		check += dir
 	return Vector2i(999, 999)

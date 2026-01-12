@@ -11,6 +11,4 @@ func _init():
 	card_y = 1
 	ai_value = 10
 	
-	# Aktifkan Flag Passive
 	is_assassin = true 
-	# (Nanti di GridManager.check_win_condition kita cek flag ini)

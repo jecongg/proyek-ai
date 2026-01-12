@@ -11,5 +11,4 @@ func _init():
 	card_y = 1
 	ai_value = 8
 	
-	# Aktifkan Flag Passive
 	is_archer = true

@@ -10,4 +10,4 @@ func _init():
 	card_y = 0
 	ai_value = 1
 	
-	can_capture_leader = false # Flag Khusus
+	can_capture_leader = false 

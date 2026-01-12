@@ -10,6 +10,5 @@ func _init():
 	card_y = 1
 	ai_value = 3
 
-# Override supaya TIDAK BISA GERAK MANUAL
 func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
 	return []

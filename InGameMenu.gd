@@ -11,17 +11,13 @@ extends Control
 var pending_action = "" 
 
 func _ready():
-	# Pastikan Root Node (Self) SELALU NYALA
 	visible = true 
-	
-	# Yang kita sembunyikan cuma Overlay-nya
+
 	overlay.hide()
 	confirm_dialog.hide()
 	
-	# Hubungkan Tombol (Sama seperti sebelumnya)
 	btn_pause.pressed.connect(open_pause_menu)
 	
-	# Perhatikan path tombol di dalam Overlay
 	$Overlay/MenuBox/VBoxContainer/BtnResume.pressed.connect(close_menu)
 	$Overlay/MenuBox/VBoxContainer/BtnRetry.pressed.connect(on_retry_pressed)
 	$Overlay/MenuBox/VBoxContainer/BtnMenu.pressed.connect(on_menu_pressed)
@@ -29,18 +25,17 @@ func _ready():
 	$Overlay/ConfirmDialog/VBoxContainer/HBoxContainer/BtnYes.pressed.connect(on_confirm_yes)
 	$Overlay/ConfirmDialog/VBoxContainer/HBoxContainer/BtnNo.pressed.connect(on_confirm_no)
 
-# --- FUNGSI BUKA/TUTUP MENU ---
 func open_pause_menu():
-	overlay.show()      # Munculkan Overlay
+	overlay.show()    
 	menu_box.show()
 	confirm_dialog.hide()
 	
 	title_label.text = "PAUSED"
 	btn_resume.visible = true 
-	btn_pause.visible = false # Sembunyikan tombol pause kecil biar bersih
+	btn_pause.visible = false 
 
 func open_game_over_menu(winner_id: int):
-	overlay.show()      # Munculkan Overlay
+	overlay.show()     
 	menu_box.show()
 	confirm_dialog.hide()
 	
@@ -49,10 +44,9 @@ func open_game_over_menu(winner_id: int):
 	btn_pause.visible = false
 
 func close_menu():
-	overlay.hide()      # Sembunyikan Overlay
-	btn_pause.visible = true # Munculkan lagi tombol pause kecil
+	overlay.hide()     
+	btn_pause.visible = true 
 
-# --- LOGIKA KONFIRMASI (Sama) ---
 func on_retry_pressed():
 	pending_action = "retry"
 	show_confirmation("Restart Game?")
@@ -75,5 +69,4 @@ func on_confirm_yes():
 	if pending_action == "retry":
 		get_tree().reload_current_scene()
 	elif pending_action == "menu":
-		# Ganti path ini ke scene main menu kamu
 		get_tree().change_scene_to_file("res://MainMenu.tscn")

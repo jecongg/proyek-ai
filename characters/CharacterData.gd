@@ -1,22 +1,20 @@
 extends Resource
 class_name CharacterData
 
-# --- STATS ---
 var id : String
 var display_name : String
 var description : String
-var sprite_column : int   # Untuk Unit di Papan
-var card_x : int = 0  # Posisi Kolom (Kiri-Kanan)
-var card_y : int = 0  # Posisi Baris (Atas-Bawah)
+var sprite_column : int  
+var card_x : int = 0 
+var card_y : int = 0 
 var ai_value : int = 5
 
-# --- PASSIVE FLAGS (Sesuai Rulebook Hal 7) ---
-var is_assassin : bool = false # Bisa capture sendirian
-var is_archer : bool = false   # Bisa bantu capture dari jarak 2
-var is_jailer : bool = false   # Memblokir skill musuh sebelah
-var is_protector : bool = false # Tidak bisa didorong/ditarik
-var grants_extra_move_to_leader : bool = false # Efek Vizier
-var can_capture_leader : bool = true # Default TRUE, nanti CUB kita set FALSE
+var is_assassin : bool = false 
+var is_archer : bool = false  
+var is_jailer : bool = false  
+var is_protector : bool = false 
+var grants_extra_move_to_leader : bool = false
+var can_capture_leader : bool = true 
 var has_active_skill : bool = false
 
 # --- FUNGSI VIRTUAL ---
@@ -29,7 +27,6 @@ func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id
 	
 	for dir in directions:
 		var target = current_pos + dir
-		# Validasi standar (hanya cek kosong)
 		if not board_state.has(target): 
 			moves.append(target)
 			

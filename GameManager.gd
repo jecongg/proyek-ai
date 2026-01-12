@@ -22,14 +22,11 @@ func _ready():
 	ai_brain.MAX_DEPTH = GlobalSettings.ai_depth 
 	add_child(ai_brain)
 	
-	# PENTING: Inisialisasi kartu di sini!
 	CardDB.initialize_deck() 
 	
-	# Hubungkan sinyal UI (pastikan path-nya benar)
 	if recruit_ui:
 		recruit_ui.card_selected.connect(_on_card_picked_from_ui)
 	
-	# Mulai game setelah frame siap
 	await get_tree().process_frame
 	start_game()
 
@@ -44,48 +41,36 @@ func start_turn(player_id):
 	
 	info_label.text = "TURN PLAYER " + str(current_turn)
 	
-	# Reset unit state (warna)
 	for unit in grid.units_on_board.values():
 		if unit.owner_id == current_turn:
 			unit.reset_turn_state()
 			
 	print("Giliran Player ", current_turn, " Dimulai.")
 	
-	if current_turn == 2: # AI
+	if current_turn == 2:
 		info_label.text += " (AI SEDANG BERPIKIR...)"
 		await get_tree().create_timer(1.0).timeout
 		perform_ai_action_phase()
 
 func perform_ai_action_phase():
-	# Cek apakah masih ada unit yang BISA gerak?
-	# (AIBrain sudah otomatis memfilter unit yang 'has_moved' == true)
 	if current_state == State.GAME_OVER: return 
 	
 	print("AI Sedang berpikir untuk langkah berikutnya...")
 	
-	# Minta otak AI mencari langkah terbaik untuk unit yang TERSISA
 	var best_move = ai_brain.get_best_move(grid.units_on_board, current_turn)
 	
 	if best_move != null:
 		print("AI Memilih Gerak: ", best_move["from"], " -> ", best_move["to"])
 		grid.execute_move(best_move["from"], best_move["to"])
-		# Setelah ini, GridManager akan memanggil 'on_action_performed'
 	else:
-		# Jika return null, artinya:
-		# 1. Semua unit sudah gerak (exhausted).
-		# 2. ATAU Unit yang sisa tidak punya langkah aman (Minimax nilai jelek).
 		print("AI Selesai Bergerak (Tidak ada langkah lagi).")
-		skip_action_phase() # BARU PINDAH KE RECRUIT
+		skip_action_phase()
 
 func on_action_performed():
 	if current_state == State.GAME_OVER: return
-	# Tunggu animasi visual selesai
 	await get_tree().create_timer(0.6).timeout
 	
 	if current_turn == 2:
-		# --- PERUBAHAN PENTING DI SINI ---
-		# Jangan langsung skip_action_phase()!
-		# Panggil lagi fungsi berpikir AI untuk mencari langkah unit selanjutnya.
 		perform_ai_action_phase()
 
 # --- RECRUITMENT ---
@@ -117,7 +102,6 @@ func open_recruit_ui():
 # PILIH KARTU (PLAYER)
 func _on_card_picked_from_ui(index):
 	selected_card_index = index
-	# Preview ID kartu (tanpa menghapusnya dari market dulu)
 	selected_card_id = CardDB.get_market_card_id(index)
 	current_state = State.RECRUIT_PLACE
 	
@@ -135,24 +119,19 @@ func try_place_recruit(coords: Vector2i):
 	if not grid.is_spawn_zone(coords, current_turn):
 		print("Bukan Zona Spawn Anda!")
 		return
-		
-	# --- LOGIKA CABANG ---
 	
 	if pending_cub_spawn:
-		# KASUS A: MELETAKKAN CUB (Langkah 2)
 		grid.spawn_unit_by_id("CUB", coords, current_turn)
 		print("Cub berhasil diletakkan.")
 		
 		pending_cub_spawn = false
 		
-		# --- PERBAIKAN 1: BUKA KUNCI UI ---
 		recruit_ui.set_buttons_active(true) 
 		# ----------------------------------
 		
 		finish_recruit_step()
 		
 	else:
-		# KASUS B: MELETAKKAN KARTU NORMAL (Langkah 1)
 		var final_card_id = CardDB.pick_card_from_market(selected_card_index)
 		if final_card_id == "": return
 
@@ -162,16 +141,12 @@ func try_place_recruit(coords: Vector2i):
 			print("Hermit diletakkan. Silakan letakkan CUB!")
 			pending_cub_spawn = true 
 			
-			recruit_ui.update_visuals() # Refresh gambar jadi baru
+			recruit_ui.update_visuals() 
 			
-			# --- PERBAIKAN 2: KUNCI UI ---
-			# Supaya player TIDAK BISA klik kartu lain sebelum naruh Cub
 			recruit_ui.set_buttons_active(false)
-			# -----------------------------
 			
 			return 
 			
-		# Kartu biasa (bukan Hermit)
 		recruit_ui.update_visuals()
 		finish_recruit_step()
 		
@@ -182,7 +157,6 @@ func finish_recruit_step():
 	selected_card_id = ""
 	
 	if recruits_remaining > 0:
-		# UBAH DI SINI JUGA: Gunakan count_total_cards
 		if count_total_cards(current_turn) >= 5:
 			end_turn()
 		else:
@@ -201,7 +175,6 @@ func do_ai_recruit():
 		var best_idx = -1
 		var best_value = -1
 		
-		# (Logic AI memilih kartu SAMA SEPERTI SEBELUMNYA)
 		for i in range(3): 
 			var card_id = CardDB.get_market_card_id(i)
 			if card_id == "": continue
@@ -218,15 +191,13 @@ func do_ai_recruit():
 			var card_id = CardDB.pick_card_from_market(best_idx)
 			print("AI Membeli Unit: ", card_id)
 			
-			# 1. Cari Posisi untuk UNIT UTAMA
 			var spawn_pos_1 = find_ai_spawn_pos()
 			if spawn_pos_1 != Vector2i(999, 999):
 				grid.spawn_unit_by_id(card_id, spawn_pos_1, 2)
 				
-				# 2. KHUSUS HERMIT: Cari Posisi ke-2 untuk CUB
 				if card_id == "HERMIT":
-					await get_tree().create_timer(0.5).timeout # Jeda dikit
-					var spawn_pos_2 = find_ai_spawn_pos() # Cari tempat kosong lagi
+					await get_tree().create_timer(0.5).timeout 
+					var spawn_pos_2 = find_ai_spawn_pos() 
 					
 					if spawn_pos_2 != Vector2i(999, 999):
 						print("AI Meletakkan CUB")
@@ -249,7 +220,6 @@ func count_total_cards(player_id) -> int:
 	var total = 0
 	for unit in grid.units_on_board.values():
 		if unit.owner_id == player_id:
-			# Cub tidak dihitung sebagai kartu karena dia "bonus" dari Hermit
 			if unit.data.id != "CUB":
 				total += 1
 	return total
@@ -258,7 +228,7 @@ func find_ai_spawn_pos() -> Vector2i:
 	for zone in grid.p2_spawn_zones:
 		if not grid.units_on_board.has(zone):
 			return zone
-	return Vector2i(999, 999) # Penuh
+	return Vector2i(999, 999)
 	
 func trigger_game_over(winner_id: int):
 	if current_state == State.GAME_OVER: return

@@ -34,9 +34,6 @@ func _ready():
 	setup_board_map()
 	queue_redraw()
 
-# ==========================================
-# 1. SETUP & SPAWN
-# ==========================================
 func setup_board_map():
 	valid_tiles.clear()
 	
@@ -79,31 +76,24 @@ func spawn_unit_by_id(id_string: String, coords: Vector2i, owner_id: int):
 	if id_string != "LEADER" and id_string != "CUB":
 		CardDB.taken_units.append(id_string)
 
-# ==========================================
-# 2. INPUT HANDLING
-# ==========================================
 func _unhandled_input(event):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var local_mouse = get_local_mouse_position()
 		var hex_coord = pixel_to_hex(local_mouse)
 		var game_manager = $"../GameManager"
 		
-		# Cek apakah klik di luar papan (kecuali sedang Skill Mode mungkin targetnya UI, tapi ini aman)
 		if not valid_tiles.has(hex_coord):
 			deselect_unit()
 			return
 
-		# FASE RECRUIT
 		if game_manager.current_state == game_manager.State.RECRUIT_PLACE:
 			game_manager.try_place_recruit(hex_coord)
 			return
 
-		# FASE ACTION
 		if game_manager.current_state == game_manager.State.ACTION_PHASE:
 			handle_action_input(hex_coord, game_manager.current_turn)
 
 func handle_action_input(clicked_coord: Vector2i, current_player: int):
-	# A. KLIK UNIT SENDIRI -> SELECT
 	if units_on_board.has(clicked_coord):
 		var unit = units_on_board[clicked_coord]
 		if unit.owner_id == current_player:
@@ -112,43 +102,33 @@ func handle_action_input(clicked_coord: Vector2i, current_player: int):
 			else:
 				print("Unit exhausted.")
 		else:
-			# KLIK MUSUH (Hanya valid jika Skill Mode dan itu target skill)
 			if is_skill_mode and clicked_coord in valid_skill_targets:
 				execute_skill_on(clicked_coord)
 			else:
 				deselect_unit()
 	
-	# B. KLIK TILE KOSONG ATAU TARGET SKILL
 	else:
-		# Prioritas 1: Skill Mode (Target Merah)
 		if is_skill_mode and clicked_coord in valid_skill_targets:
 			execute_skill_on(clicked_coord)
 		
-		# Prioritas 2: Move Mode (Target Hijau)
 		elif clicked_coord in valid_moves_current and not is_skill_mode:
 			move_selected_unit_to(clicked_coord)
 			
 		else:
 			deselect_unit()
 
-# ==========================================
-# 3. SELECTION & MODES
-# ==========================================
 func select_unit(coord: Vector2i, unit):
 	selected_unit_coord = coord
 	is_skill_mode = false
 	
-	# Hitung Moves (Hijau)
 	var moves = unit.data.get_valid_moves(units_on_board, coord, unit.owner_id)
 	valid_moves_current.clear()
 	for m in moves:
 		if valid_tiles.has(m) and not units_on_board.has(m):
 			valid_moves_current.append(m)
 	
-	# --- LOGIKA JAILER ---
 	var silenced = is_unit_silenced(coord, unit.owner_id)
-	
-	# Tampilkan Tombol Skill HANYA JIKA punya skill DAN TIDAK SILENCED
+
 	if unit.data.has_active_skill and not silenced:
 		skill_btn.visible = true
 		skill_btn.text = "USE SKILL"
@@ -187,7 +167,6 @@ func toggle_skill_mode():
 		var unit = units_on_board[selected_unit_coord]
 		var raw_targets = unit.data.get_skill_targets(units_on_board, selected_unit_coord, unit.owner_id)
 		
-		# Filter hanya target yang ada di papan
 		valid_skill_targets.clear()
 		for t in raw_targets:
 			if valid_tiles.has(t):
@@ -203,16 +182,9 @@ func toggle_skill_mode():
 
 	queue_redraw()
 
-# ==========================================
-# 4. EXECUTION (MOVE / SKILL / SWAP)
-# ==========================================
-
-# Eksekusi Gerak Normal (Jalan Kaki)
 func move_selected_unit_to(target_coord: Vector2i):
-	# Panggil fungsi general execute_move
 	execute_move(selected_unit_coord, target_coord)
 
-# Eksekusi Skill (Dipanggil saat klik target Merah)
 func execute_skill_on(target_coord: Vector2i):
 	var unit = units_on_board[selected_unit_coord]
 	var success = unit.data.resolve_skill(units_on_board, selected_unit_coord, target_coord, self)
@@ -222,7 +194,6 @@ func execute_skill_on(target_coord: Vector2i):
 		deselect_unit()
 		$"../GameManager".on_action_performed()
 
-# Fungsi General Pindah Unit (Dipakai AI dan Player Move)
 func execute_move(from_coord: Vector2i, to_coord: Vector2i):
 	if not units_on_board.has(from_coord): return
 	
@@ -250,21 +221,17 @@ func execute_move(from_coord: Vector2i, to_coord: Vector2i):
 	deselect_unit()
 	$"../GameManager".on_action_performed()
 
-# Helper Pindah Paksa (Untuk Push/Pull Skill)
 func force_move_unit(from: Vector2i, to: Vector2i) -> bool:
 	if not units_on_board.has(from): return false
 	var unit = units_on_board[from]
-	
-	# --- CEK PROTECTOR ---
+
 	var current_player = $"../GameManager".current_turn
 	var is_enemy_action = (unit.owner_id != current_player)
 	
 	if is_unit_protected(from, is_enemy_action):
 		print("AKSI DIBLOKIR PROTECTOR!")
-		return false # <--- LAPORKAN GAGAL
-	# ---------------------
-	
-	# Jika tidak ada halangan, lanjut pindahkan
+		return false 
+
 	units_on_board.erase(from)
 	units_on_board[to] = unit
 	unit.grid_pos = to
@@ -279,9 +246,8 @@ func force_move_unit(from: Vector2i, to: Vector2i) -> bool:
 	check_win_condition(1)
 	check_win_condition(2)
 	
-	return true # <--- LAPORKAN BERHASIL
+	return true 
 
-# Helper Tukar Posisi (Untuk Illusionist)
 func swap_units(pos_a: Vector2i, pos_b: Vector2i):
 	if not units_on_board.has(pos_a) or not units_on_board.has(pos_b): return
 	
@@ -289,7 +255,6 @@ func swap_units(pos_a: Vector2i, pos_b: Vector2i):
 	var unit_b = units_on_board[pos_b]
 	var current_player = $"../GameManager".current_turn
 	
-	# --- 1. CEK PROTEKSI (Sama seperti sebelumnya) ---
 	var a_is_enemy = (unit_a.owner_id != current_player)
 	if is_unit_protected(pos_a, a_is_enemy):
 		print("Swap Gagal! Unit A dilindungi Protector.")
@@ -300,35 +265,27 @@ func swap_units(pos_a: Vector2i, pos_b: Vector2i):
 		print("Swap Gagal! Unit B dilindungi Protector.")
 		return
 	
-	# --- 2. TUKAR DATA LOGIKA ---
 	units_on_board[pos_a] = unit_b
 	units_on_board[pos_b] = unit_a
 	unit_a.grid_pos = pos_b
 	unit_b.grid_pos = pos_a
-	
-	# --- 3. ANIMASI VISUAL (TARUH DI SINI) ---
+
 	var px_a = hex_to_pixel(pos_a)
 	var px_b = hex_to_pixel(pos_b)
 	
 	var tween = create_tween().set_parallel(true)
 	
-	# Efek Gerakan (Bidak meluncur dengan halus)
 	tween.tween_property(unit_a, "position", px_b, 0.4).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
 	tween.tween_property(unit_b, "position", px_a, 0.4).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
 	
-	# Efek Skala (Bidak membesar sedikit lalu mengecil kembali ke ukuran normal)
 	unit_a.scale = Vector2(1.2, 1.2) 
 	unit_b.scale = Vector2(1.2, 1.2)
 	tween.tween_property(unit_a, "scale", Vector2(1, 1), 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(unit_b, "scale", Vector2(1, 1), 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	
-	# --- 4. CEK KEMENANGAN ---
+
 	check_win_condition(1)
 	check_win_condition(2)
 
-# ==========================================
-# 5. WIN CONDITION
-# ==========================================
 func check_win_condition(attacker_id: int):
 	var game_manager = $"../GameManager"
 	if game_manager.current_state == game_manager.State.GAME_OVER: return
@@ -344,20 +301,18 @@ func check_win_condition(attacker_id: int):
 	
 	if enemy_leader_pos == Vector2i(999, 999): return 
 
-	# --- 1. CAPTURE CHECK (2 Musuh Bersebelahan) ---
 	var enemy_adj_count = 0
 	for dir in DIRECTIONS:
 		var neighbor = enemy_leader_pos + dir
 		if units_on_board.has(neighbor):
 			var unit = units_on_board[neighbor]
 			if unit.owner_id == attacker_id:
-				if unit.data.id == "ASSASSIN": # Assassin menang instan
+				if unit.data.id == "ASSASSIN":
 					game_manager.trigger_game_over(attacker_id)
 					return
-				if not unit.data.is_archer and unit.data.can_capture_leader: # Archer tidak bantu capture jika nempel
+				if not unit.data.is_archer and unit.data.can_capture_leader: 
 					enemy_adj_count += 1
 		
-		# Cek Archer Jauh (Jarak 2)
 		var snipe_pos = enemy_leader_pos + (dir * 2)
 		if units_on_board.has(snipe_pos):
 			var u = units_on_board[snipe_pos]
@@ -368,20 +323,17 @@ func check_win_condition(attacker_id: int):
 		game_manager.trigger_game_over(attacker_id)
 		return
 
-	# --- 2. SURROUND CHECK (Tidak ada petak kosong) ---
 	var is_surrounded = true
 	for dir in DIRECTIONS:
 		var neighbor = enemy_leader_pos + dir
 		if valid_tiles.has(neighbor) and not units_on_board.has(neighbor):
-			is_surrounded = false # Masih ada lubang kosong
+			is_surrounded = false 
 			break
 	
 	if is_surrounded:
 		game_manager.trigger_game_over(attacker_id)
 
-# ==========================================
-# 6. MATH & DRAWING
-# ==========================================
+
 func hex_to_pixel(hex: Vector2i) -> Vector2:
 	var x = hex_size * sqrt(3) * (hex.x + hex.y / 2.0)
 	var y = (hex_size * 3.0 / 2.0 * hex.y) * y_stretch
@@ -445,40 +397,30 @@ func is_unit_silenced(unit_pos: Vector2i, owner_id: int) -> bool:
 				return true # Terkena Silence!
 	return false
 
-# Cek apakah unit ini dilindungi PROTECTOR (Tidak bisa digeser Musuh)
-# initiator_is_enemy: TRUE jika skill berasal dari musuh
 func is_unit_protected(unit_pos: Vector2i, initiator_is_enemy: bool) -> bool:
-	# Jika yang menggerakkan adalah teman sendiri (misal Brewmaster), 
-	# maka perlindungan tidak berlaku (boleh dipindah).
 	if not initiator_is_enemy: return false 
 	
 	if not units_on_board.has(unit_pos): return false
 	var unit = units_on_board[unit_pos]
 	
-	# --- CEK 1: Apakah dia sendiri adalah Protector? ---
 	if unit.data.id == "PROTECTOR": 
 		return true
 	
-	# --- CEK 2: Apakah ada Protector TEMAN di sebelahnya? (Aura Protection) ---
 	var neighbors = get_neighbors(unit_pos)
 	for n in neighbors:
 		if units_on_board.has(n):
 			var neighbor_unit = units_on_board[n]
-			# Syarat: Satu pemilik (teman) DAN dia adalah Protector
 			if neighbor_unit.owner_id == unit.owner_id and neighbor_unit.data.id == "PROTECTOR":
 				return true
 				
 	return false
 
-# Fungsi ini dipanggil setiap kali ada unit yang bergerak
 func check_nemesis_trigger(moved_unit):
-	# Syarat: Unit yang bergerak HARUS Leader
 	if moved_unit.data.id != "LEADER": return
 	
 	var leader_owner = moved_unit.owner_id
 	var nemesis_owner = 1 if leader_owner == 2 else 2
 	
-	# Cari Nemesis milik musuh
 	var nemesis_unit = null
 	var nemesis_pos = Vector2i.ZERO
 	for coord in units_on_board:
@@ -492,32 +434,25 @@ func check_nemesis_trigger(moved_unit):
 
 	var target_pos = moved_unit.grid_pos
 	
-	# --- LOGIKA GERAK NEMESIS 2 LANGKAH (RULEBOOK HAL 7) ---
 	var current_path_pos = nemesis_pos
 	var steps_taken = 0
 	
-	for i in range(2): # Coba gerak maksimal 2 kali
+	for i in range(2): 
 		var next_step = get_best_step_towards(current_path_pos, target_pos, nemesis_pos)
 		
-		# Jika ditemukan petak tetangga yang lebih dekat ke Leader musuh
 		if next_step != current_path_pos:
-			# Pindahkan unit di data & visual (Langkah demi langkah)
 			force_move_unit_no_trigger(current_path_pos, next_step)
 			
-			# Update posisi pelacakan untuk langkah berikutnya
 			current_path_pos = next_step
 			
-			# JEDA VISUAL: Agar terlihat melangkah, bukan teleport
 			await get_tree().create_timer(0.2).timeout 
 		else:
-			# Berhenti jika terhalang unit lain (sesuai aturan Hal 7)
 			break 
 	
 	if steps_taken > 0:
 		print("NEMESIS: Mengejar Leader musuh sebanyak ", steps_taken, " langkah.")
 		force_move_unit_no_trigger(nemesis_pos, current_path_pos)
 
-# Helper Pathfinding Sederhana (Greedy: Cari tetangga yang jaraknya paling dekat ke target)
 func get_best_step_towards(current: Vector2i, target: Vector2i, origin: Vector2i) -> Vector2i:
 	var best_pos = current
 	var min_dist = get_hex_distance(current, target)
@@ -525,7 +460,6 @@ func get_best_step_towards(current: Vector2i, target: Vector2i, origin: Vector2i
 	for dir in DIRECTIONS:
 		var check = current + dir
 		
-		# Syarat: Di papan, Kosong, dan BUKAN petak asal (Larangan Loop Hal 7)
 		if valid_tiles.has(check) and not units_on_board.has(check) and check != origin:
 			var dist = get_hex_distance(check, target)
 			if dist < min_dist:
@@ -534,12 +468,10 @@ func get_best_step_towards(current: Vector2i, target: Vector2i, origin: Vector2i
 				
 	return best_pos
 
-# Helper Jarak Hex
 func get_hex_distance(a: Vector2i, b: Vector2i) -> int:
 	var vec = a - b
 	return (abs(vec.x) + abs(vec.y) + abs(vec.x + vec.y)) / 2
 
-# Helper Pindah Tanpa Memicu Loop (PENTING)
 func force_move_unit_no_trigger(from: Vector2i, to: Vector2i):
 	if not units_on_board.has(from): return
 	var unit = units_on_board[from]

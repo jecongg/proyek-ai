@@ -1,7 +1,6 @@
 extends CharacterData
 class_name RoyalGuardData
 
-# Tambahkan baris ini di paling atas agar bisa diakses semua fungsi di bawahnya
 const DIRECTIONS = [
 	Vector2i(0, -1), Vector2i(1, -2), Vector2i(1, -1),
 	Vector2i(0, 1), Vector2i(-1, 2), Vector2i(-1, 1)
@@ -17,7 +16,7 @@ func _init():
 	ai_value = 7
 	has_active_skill = true
 
-# --- 1. GERAKAN STANDAR ---
+# --- GERAKAN STANDAR ---
 func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
 	var moves = []
 	for dir in DIRECTIONS:
@@ -26,7 +25,7 @@ func get_valid_moves(board_state: Dictionary, current_pos: Vector2i, my_owner_id
 			moves.append(target)
 	return moves
 
-# --- 2. TARGET SKILL ---
+# --- TARGET SKILL ---
 func get_skill_targets(board_state: Dictionary, current_pos: Vector2i, my_owner_id: int) -> Array:
 	var targets = []
 	var leader_pos = Vector2i(999, 999)
@@ -58,7 +57,7 @@ func get_skill_targets(board_state: Dictionary, current_pos: Vector2i, my_owner_
 					
 	return targets
 
-# --- 3. EKSEKUSI SKILL ---
+# --- EKSEKUSI SKILL ---
 func resolve_skill(board_state: Dictionary, current_pos: Vector2i, target_pos: Vector2i, grid_ref) -> bool:
 	if board_state.has(target_pos): return false
 	
@@ -83,7 +82,6 @@ func resolve_skill(board_state: Dictionary, current_pos: Vector2i, target_pos: V
 		
 		if stepping_stone != Vector2i(999,999):
 			grid_ref.force_move_unit(current_pos, stepping_stone)
-			# Tunggu sebentar agar mata pemain bisa mengikuti gerakan
 			await grid_ref.get_tree().create_timer(0.3).timeout
 			grid_ref.force_move_unit(stepping_stone, target_pos)
 		else:

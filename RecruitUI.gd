@@ -27,7 +27,6 @@ func close_market():
 	hide()
 
 func update_visuals():
-	# Reset warna tombol jadi normal
 	for btn in buttons:
 		btn.modulate = Color.WHITE
 		
@@ -47,7 +46,6 @@ func update_visuals():
 			buttons[i].modulate = Color(0.5, 0.5, 0.5, 0.5) 
 		else:
 			buttons[i].disabled = false
-			# Pastikan modulate putih bersih (kecuali sedang disable)
 			buttons[i].modulate = Color.WHITE 
 			
 			if CardDB.library.has(unit_id):
@@ -63,27 +61,21 @@ func update_visuals():
 				dummy_data = null
 
 func _on_card_clicked(index):
-	# Panggil fungsi highlight visual
 	highlight_selected_card(index)
 	emit_signal("card_selected", index)
 
-# FUNGSI BARU: VISUALISASI KARTU TERPILIH
 func highlight_selected_card(index):
 	for i in range(3):
 		if i == index:
-			buttons[i].modulate = Color(1, 1, 0) # Jadi Kuning (Terpilih)
+			buttons[i].modulate = Color(1, 1, 0) 
 		else:
-			buttons[i].modulate = Color(0.5, 0.5, 0.5) # Jadi Gelap (Tidak terpilih)
+			buttons[i].modulate = Color(0.5, 0.5, 0.5) 
 			
 func set_buttons_active(is_active: bool):
 	for btn in buttons:
-		# Kita set disabled. 
-		# Jika is_active = true, disabled = false (Nyala).
-		# Jika is_active = false, disabled = true (Mati).
 		btn.disabled = !is_active 
-		
-		# Opsional: Ubah warna biar kelihatan kalau lagi dikunci
+
 		if is_active:
 			btn.modulate = Color.WHITE
 		else:
-			btn.modulate = Color(0.5, 0.5, 0.5) # Gelap
+			btn.modulate = Color(0.5, 0.5, 0.5) 

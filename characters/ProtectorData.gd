@@ -10,4 +10,4 @@ func _init():
 	card_y = 1
 	ai_value = 3
 	
-	is_protector = true # Flag Pasif
+	is_protector = true 

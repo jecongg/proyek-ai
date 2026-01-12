@@ -10,4 +10,4 @@ func _init():
 	card_y = 1
 	ai_value = 5
 	
-	is_jailer = true # Flag Pasif
+	is_jailer = true 

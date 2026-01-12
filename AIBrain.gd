@@ -1,7 +1,6 @@
 extends Node
 class_name AIBrain
 
-# Struktur data virtual
 class VirtualUnit:
 	var id: String
 	var owner_id: int
@@ -17,7 +16,7 @@ class VirtualUnit:
 var MAX_DEPTH = 3
 const INF = 1000000.0
 
-# --- BOBOT NILAI (TUNING) ---
+# --- BOBOT NILAI ---
 const SCORE_KILL_LEADER = 10000.0
 const SCORE_CAPTURE_THREAT = 500.0
 const SCORE_SURROUND_PANIC = 800.0
@@ -118,22 +117,20 @@ func _evaluate_board(board: Dictionary, ai_id: int) -> float:
 	if my_leader_pos == Vector2i(999, 999): return -INF
 	if en_leader_pos == Vector2i(999, 999): return INF
 
-	# --- 1. EVALUASI LEADER KITA (DEFENSIF) ---
-	# Penalti jika ada musuh di sekitar kita (Hindari Capture)
+	# --- EVALUASI LEADER KITA (DEFENSIF) ---
 	var enemies_near_me = _count_adjacent_enemies(board, my_leader_pos, ai_id)
 	score -= enemies_near_me * 600.0 
 	
 	# Bonus jalan keluar (Hindari Surround - Hal 5)
 	var my_escape_routes = _count_free_spaces(board, my_leader_pos)
 	score += my_escape_routes * 150.0
-	if my_escape_routes <= 1: score -= 1000.0 # Sangat bahaya jika terjepit
+	if my_escape_routes <= 1: score -= 1000.0 
 
-	# --- 2. EVALUASI LEADER MUSUH (AGRESIF) ---
+	# --- EVALUASI LEADER MUSUH (AGRESIF) ---
 	# Bonus jika unit kita mengerumuni musuh
 	var allies_near_enemy = _count_adjacent_enemies(board, en_leader_pos, enemy_id)
 	score += allies_near_enemy * 500.0
 
-	# Strategi Unit Spesifik (Rulebook Hal 7)
 	for coord in board:
 		var unit = board[coord]
 		if unit.owner_id == ai_id:
@@ -159,7 +156,7 @@ func _find_leader(board: Dictionary, player_id: int) -> Vector2i:
 		var unit = board[coord]
 		if unit.data.id == "LEADER" and unit.owner_id == player_id:
 			return coord
-	return Vector2i(999, 999) # Tidak ditemukan
+	return Vector2i(999, 999) 
 
 func _clone_board(original: Dictionary) -> Dictionary:
 	var new_board = {}
@@ -177,19 +174,15 @@ func _get_all_possible_moves(board: Dictionary, player_id: int) -> Array:
 		var unit = board[coord]
 		if unit.owner_id == player_id and not unit.has_moved:
 			
-			# 1. TAMBAHKAN GERAKAN STANDAR
 			var raw_moves = unit.data.get_valid_moves(board, coord, unit.owner_id)
 			for target in raw_moves:
 				if grid_manager.valid_tiles.has(target) and not board.has(target):
 					moves.append({ "from": coord, "to": target, "is_skill": false })
 			
-			# 2. TAMBAHKAN PENGGUNAAN SKILL (Agar AI bisa melompat, menarik, dll)
 			if unit.data.has_active_skill:
-				# Cek apakah terkena Jailer (Silence)
 				if not grid_manager.is_unit_silenced(coord, player_id):
 					var skill_targets = unit.data.get_skill_targets(board, coord, player_id)
 					for s_target in skill_targets:
-						# Masukkan target skill ke dalam pertimbangan AI
 						moves.append({ "from": coord, "to": s_target, "is_skill": true })
 	return moves
 
@@ -197,13 +190,10 @@ func _apply_move(board: Dictionary, move: Dictionary) -> Dictionary:
 	var new_board = _clone_board(board)
 	
 	if move.has("is_skill") and move["is_skill"]:
-		# AI mensimulasikan penggunaan Skill (Sederhana: Unit pindah ke target)
-		# Untuk skill kompleks seperti Swap atau Push, ini perlu diperluas.
 		var unit = new_board[move["from"]]
 		new_board.erase(move["from"])
 		new_board[move["to"]] = unit
 	else:
-		# Gerakan jalan biasa
 		var unit = new_board[move["from"]]
 		new_board.erase(move["from"])
 		new_board[move["to"]] = unit
@@ -223,7 +213,6 @@ func _check_winner(board: Dictionary) -> int:
 	return 0
 
 func _hex_distance(a: Vector2i, b: Vector2i) -> int:
-	# Rumus jarak koordinat Axial/Cube Hexagon
 	return (abs(a.x - b.x) + abs(a.x + a.y - b.x - b.y) + abs(a.y - b.y)) / 2
 
 func _is_in_line(a: Vector2i, b: Vector2i) -> bool:
@@ -237,7 +226,7 @@ func _is_visible_in_line(board: Dictionary, start: Vector2i, end: Vector2i) -> b
 	if dist <= 1: return true 
 	
 	var dir = _get_direction(start, end)
-	if dir == Vector2i.ZERO: return false # Tidak segaris (safety check)
+	if dir == Vector2i.ZERO: return false 
 
 	var check = start + dir
 	while check != end:
@@ -250,7 +239,6 @@ func _is_visible_in_line(board: Dictionary, start: Vector2i, end: Vector2i) -> b
 func _get_direction(from: Vector2i, to: Vector2i) -> Vector2i:
 	for d in DIRECTIONS:
 		var check = from + d
-		# Raycast simple: loop sampai range max
 		for k in range(10):
 			if check == to: return d
 			check += d
